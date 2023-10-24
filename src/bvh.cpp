@@ -128,7 +128,22 @@ AxisAlignedBox computePrimitiveAABB(const BVHInterface::Primitive primitive)
 // This method is unit-tested, so do not change the function signature.
 AxisAlignedBox computeSpanAABB(std::span<const BVHInterface::Primitive> primitives)
 {
-    return { .lower = glm::vec3(0), .upper = glm::vec3(0) };
+    std::vector<AxisAlignedBox> aabbs;
+    glm::vec3 low { std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+    glm::vec3 high { std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min() };
+    AxisAlignedBox oi;
+    for (BVHInterface::Primitive prim : primitives) {
+        oi = computePrimitiveAABB(prim);
+
+        low[0] = glm::min(low[0], oi.lower.x);
+        low[1] = glm::min(low[1], oi.lower.y);
+        low[2] = glm::min(low[2], oi.lower.z);
+
+        high[0] = glm::max(low[0], oi.upper.x);
+        high[1] = glm::max(low[1], oi.upper.y);
+        high[2] = glm::max(low[2], oi.upper.z);
+    }
+    return { .lower = low, .upper = high };
 }
 
 // TODO: Standard feature
