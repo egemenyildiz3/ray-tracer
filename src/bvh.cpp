@@ -138,7 +138,11 @@ AxisAlignedBox computeSpanAABB(std::span<const BVHInterface::Primitive> primitiv
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computePrimitiveCentroid(const BVHInterface::Primitive primitive)
 {
-    return glm::vec3(0);
+    float avgX = (primitive.v0.position[0] + primitive.v1.position[0] + primitive.v2.position[0]) / 3.0f;
+    float avgY = (primitive.v0.position[1] + primitive.v1.position[1] + primitive.v2.position[1]) / 3.0f;
+    float avgZ = (primitive.v0.position[2] + primitive.v1.position[2] + primitive.v2.position[2]) / 3.0f;
+
+    return { avgX, avgY, avgZ };
 }
 
 // TODO: Standard feature
