@@ -87,6 +87,50 @@ TEST_CASE("StudentTest")
         CHECK(v == longest);
     }
 
+    SECTION("splitPrimitivesByMedian")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        int axis = 0; 
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 0.0f, 7.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
+        };
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1, triangle2, triangle3, triangle4 };
+        
+        int split = splitPrimitivesByMedian(box, axis, triangles);
+        CHECK(split == 3);
+        CHECK(triangles[0].operator==(triangle0));
+        CHECK(triangles[1].operator==(triangle2));
+        CHECK(triangles[2].operator==(triangle3));
+        CHECK(triangles[3].operator==(triangle1));
+        CHECK(triangles[4].operator==(triangle4));
+
+    }
+
 }
 
 // The below tests are not "good" unit tests. They don't actually test correctness.

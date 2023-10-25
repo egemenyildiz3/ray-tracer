@@ -181,6 +181,30 @@ uint32_t computeAABBLongestAxis(const AxisAlignedBox& aabb)
     return 0;
 }
 
+void swap(std::span<BVHInterface::Primitive> primitives, int i)
+{
+    BVHInterface::Primitive v = primitives[i];
+    primitives[i] = primitives[i - 1];
+    primitives[i - 1] = v;
+}
+
+void checkIndex(std::span<BVHInterface::Primitive> primitives, int i, uint32_t axis)
+{
+    if (i == 0) return;
+    if (computePrimitiveCentroid(primitives[i - 1])[axis] > computePrimitiveCentroid(primitives[i])[axis]) {
+        swap(primitives, i);
+        checkIndex(primitives,i-1,axis);
+    }
+    return;
+}
+
+void insertionSort(std::span<BVHInterface::Primitive> primitives, uint32_t axis)
+{
+    for (int i = 0; i < primitives.size();i++) {
+        checkIndex(primitives, i, axis);
+    }
+}
+
 // TODO: Standard feature
 // Given a range of BVH triangles, sort these along a specified axis based on their geometric centroid.
 // Then, find and return the split index in the range, such that the subrange containing the first element 
@@ -194,6 +218,9 @@ uint32_t computeAABBLongestAxis(const AxisAlignedBox& aabb)
 size_t splitPrimitivesByMedian(const AxisAlignedBox& aabb, uint32_t axis, std::span<BVHInterface::Primitive> primitives)
 {
     using Primitive = BVHInterface::Primitive;
+
+    insertionSort(primitives, axis);
+    return glm::ceil(primitives.size() / 2.0f);
 
     return 0; // This is clearly not the solution
 }
