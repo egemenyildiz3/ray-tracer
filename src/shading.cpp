@@ -59,8 +59,9 @@ glm::vec3 computeShading(RenderState& state, const glm::vec3& cameraDirection, c
 // from the light, evaluate a Lambertian diffuse shading, returning the reflected light towards the target.
 glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
-    // Implement basic diffuse shading if you wish to use it
-    return sampleMaterialKd(state, hitInfo);
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    return lightColor * sampleMaterialKd(state, hitInfo) * glm::dot(ld, normal);
 }
 
 // TODO: Standard feature
@@ -81,7 +82,25 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
 glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
     // TODO: Implement phong shading
-    return sampleMaterialKd(state, hitInfo) * lightColor;
+    //return sampleMaterialKd(state, hitInfo) * lightColor;
+
+    assert(-glm::reflect(lightDirection, hitInfo.normal) == hitInfo.normal * 2.0f * glm::dot(lightDirection, hitInfo.normal) - lightDirection);
+
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    glm::vec3 cd = glm::normalize(cameraDirection);
+
+    glm::vec3 reflectDirection = glm::normalize(-glm::reflect(ld, normal));
+    float dot = glm::dot(cd, reflectDirection);
+
+    glm::vec3 res; 
+    if (dot > 0)
+        res = lightColor * sampleMaterialKd(state, hitInfo) * pow(dot, hitInfo.material.shininess);
+    else
+        res = lightColor * sampleMaterialKd(state, hitInfo);
+
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+    return res + diffuse;
 }
 
 // TODO: Standard feature
