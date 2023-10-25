@@ -11,6 +11,7 @@
 DISABLE_WARNINGS_PUSH()
 #include <catch2/catch_all.hpp>
 #include <glm/glm.hpp>
+#include <iostream>;
 DISABLE_WARNINGS_POP()
 
 // In this file you can add your own unit tests using the Catch2 library.
@@ -21,10 +22,71 @@ DISABLE_WARNINGS_POP()
 // You don't have to hand them in; we will not consider them when grading.
 //
 
+void printVector(glm::vec3 input) {
+    std::cout << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
+}
+
 // Add your tests here, if you want :D
 TEST_CASE("StudentTest")
 {
     // Add your own tests here...
+
+    SECTION("computePrimitiveAABB")
+    {
+        BVHInterface::Primitive triangle;
+        triangle.v0 = { { 0.0f, 0.0f, 0.0f } };
+        triangle.v1 = { { 1.0f, 0.0f, 0.0f } };
+        triangle.v2 = { { 0.0f, 1.0f, 0.0f } };
+        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 1, 1, 0 } };
+        AxisAlignedBox box = computePrimitiveAABB(triangle);
+        CHECK(box.lower ==  v.lower);
+        CHECK(box.upper == v.upper);
+    }
+
+    SECTION("computeSpanAABB") 
+    {
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 1.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 4.0f, 0.0f } },
+            .v2 = { { 4.0f, 1.0f, 0.0f } }
+        };
+        std::vector triangles = { triangle0, triangle1, triangle2 };
+        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 4, 4, 0 } };
+        AxisAlignedBox box = computeSpanAABB(triangles);
+        CHECK(box.lower == v.lower);
+        CHECK(box.upper == v.upper);
+    }
+
+    SECTION("computePrimitiveCentroid")
+    {
+        BVHInterface::Primitive triangle = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        glm::vec3 v = { 1.0f/3.0f,1.0f/3.0f,0 };
+        glm::vec3 center = computePrimitiveCentroid(triangle);
+        CHECK(v == center);
+    }
+
+    SECTION("computeAABBLongestAxis") 
+    {
+        AxisAlignedBox aabb { .lower = { 0,1,-2 }, .upper = {10,10,10} };
+        uint32_t v = 2;
+        uint32_t longest = computeAABBLongestAxis(aabb);
+        CHECK(v == longest);
+    }
+
 }
 
 // The below tests are not "good" unit tests. They don't actually test correctness.
