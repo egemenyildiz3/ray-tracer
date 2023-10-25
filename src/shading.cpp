@@ -91,15 +91,11 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
     glm::vec3 cd = glm::normalize(cameraDirection);
 
     glm::vec3 reflectDirection = glm::normalize(-glm::reflect(ld, normal));
-    float dot = glm::dot(cd, reflectDirection);
+    float dot = glm::max(0.0f, glm::dot(cd, reflectDirection));
 
-    glm::vec3 res; 
-    if (dot > 0)
-        res = lightColor * sampleMaterialKd(state, hitInfo) * pow(dot, hitInfo.material.shininess);
-    else
-        res = lightColor * sampleMaterialKd(state, hitInfo);
-
+    glm::vec3 res = lightColor * hitInfo.material.ks * pow(dot, hitInfo.material.shininess);
     glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
     return res + diffuse;
 }
 
@@ -121,7 +117,19 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
 glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
     // TODO: Implement blinn-phong shading
-    return sampleMaterialKd(state, hitInfo) * lightColor;
+    // return sampleMaterialKd(state, hitInfo) * lightColor;
+
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    glm::vec3 cd = glm::normalize(cameraDirection);
+
+    glm::vec3 m = glm::normalize(ld + cd);
+    float dot = glm::max(0.0f, glm::dot(m, normal));
+
+    glm::vec3 res = lightColor * hitInfo.material.ks * pow(dot, hitInfo.material.shininess);
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
+    return res + diffuse;
 }
 
 // TODO: Standard feature
