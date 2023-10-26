@@ -36,7 +36,7 @@ glm::vec3 renderRay(RenderState& state, Ray ray, int rayDepth)
     glm::vec3 Lo = computeLightContribution(state, ray, hitInfo);
 
     // Draw an example debug ray for the incident ray (feel free to modify this for yourself)
-    drawRay(ray, glm::vec3(1.0f));
+    drawRay(ray, glm::vec3(1.0f) / float(rayDepth + 1));
 
     // Given that recursive components are enabled, and we have not exceeded maximum depth,
     // estimate the contribution along these components
@@ -73,7 +73,12 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 {
     // TODO: generate a mirrored ray
     //       if you use glm::reflect, you will not get points for this method!
-    return Ray {};
+
+    Ray res;
+    res.origin = ray.origin + (ray.t - 0.01f) * ray.direction;
+    res.direction = glm::normalize(ray.direction - 2.0f * (glm::dot(ray.direction, hitInfo.normal)) * hitInfo.normal);
+
+    return res;
 }
 
 // TODO: Standard feature
@@ -86,7 +91,9 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
     // TODO: generate a passthrough ray
-    return Ray {};
+
+    Ray res{};
+    return res;
 }
 
 // TODO: standard feature
@@ -102,7 +109,16 @@ Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
     // TODO; you should first implement generateReflectionRay()
+    //Sphere p;
+    //p.radius = 0.01;
+    //p.center = hitInfo.barycentricCoord;
+    //drawSphere(p);
+    //hitInfo.
     Ray r = generateReflectionRay(ray, hitInfo);
+
+    //if (rayDepth < 1)
+    //    drawRay(r, glm::vec3(0, 1, 1));
+    hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
     // ...
 }
 
