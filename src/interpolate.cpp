@@ -13,7 +13,25 @@
 glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& p)
 {
     // TODO: implement this function.
-    return glm::vec3(0.0);
+
+    // Taken from chapter 4 from Real-Time Collison Detection by Christer Ericson
+
+    glm::vec3 w0 = v1 - v0;
+    glm::vec3 w1 = v2 - v0;
+    glm::vec3 w2 = p - v0;
+
+    float dot00 = glm::dot(w0, w0);
+    float dot10 = glm::dot(w1, w0);
+    float dot11 = glm::dot(w1, w1);
+    float dot20 = glm::dot(w2, w0);
+    float dot21 = glm::dot(w2, w1);
+
+    // Using Cramers rule
+    float alpha = (dot20 * dot11 - dot10 * dot21) / (dot00 * dot11 - dot10 * dot10);
+    float beta = (dot00 * dot21 - dot20 * dot10) / (dot00 * dot11 - dot10 * dot10);
+    float gamma = 1.0f - alpha - beta;
+
+    return glm::vec3(alpha, beta, gamma);
 }
 
 // TODO Standard feature
