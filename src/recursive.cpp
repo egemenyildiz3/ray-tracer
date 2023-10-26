@@ -75,7 +75,9 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
     //       if you use glm::reflect, you will not get points for this method!
 
     Ray res;
-    res.origin = ray.origin + (ray.t - 0.01f) * ray.direction;
+    float ofset = 0.01;
+
+    res.origin = ray.origin + (ray.t - ofset) * ray.direction;
     res.direction = glm::normalize(ray.direction - 2.0f * (glm::dot(ray.direction, hitInfo.normal)) * hitInfo.normal);
 
     return res;
@@ -91,9 +93,7 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
     // TODO: generate a passthrough ray
-
-    Ray res{};
-    return res;
+    return Ray {};
 }
 
 // TODO: standard feature
@@ -109,15 +109,7 @@ Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
     // TODO; you should first implement generateReflectionRay()
-    //Sphere p;
-    //p.radius = 0.01;
-    //p.center = hitInfo.barycentricCoord;
-    //drawSphere(p);
-    //hitInfo.
     Ray r = generateReflectionRay(ray, hitInfo);
-
-    //if (rayDepth < 1)
-    //    drawRay(r, glm::vec3(0, 1, 1));
     hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
     // ...
 }
