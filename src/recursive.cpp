@@ -92,8 +92,12 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 // This method is unit-tested, so do not change the function signature.
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
-    // TODO: generate a passthrough ray
-    return Ray {};
+    // Create the passthrough ray starting from the intersection point
+    Ray ray1;
+    ray1.origin = ray.origin + ray.direction * (ray.t + 0.001f); // Use any point you have access to
+    ray1.direction = glm::normalize(ray.direction);
+
+    return ray1;
 }
 
 // TODO: standard feature
@@ -126,7 +130,11 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
 // This method is unit-tested, so do not change the function signature.
 void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
-    // TODO; you should first implement generatePassthroughRay()
+    // TODO: you should first implement generatePassthroughRay()
     Ray r = generatePassthroughRay(ray, hitInfo);
-    // ...
+
+    glm::vec3 miss = renderRay(state, r, rayDepth + 1);
+   
+    const float alpha = hitInfo.material.transparency;
+    hitColor = hitColor * (1.0f - alpha) + miss * alpha;
 }
