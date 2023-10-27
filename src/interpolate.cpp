@@ -27,11 +27,11 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
     float dot21 = glm::dot(w2, w1);
 
     // Using Cramers rule
-    float alpha = (dot20 * dot11 - dot10 * dot21) / (dot00 * dot11 - dot10 * dot10);
-    float beta = (dot00 * dot21 - dot20 * dot10) / (dot00 * dot11 - dot10 * dot10);
-    float gamma = 1.0f - alpha - beta;
+    float beta = (dot20 * dot11 - dot10 * dot21) / (dot00 * dot11 - dot10 * dot10);
+    float gamma  = (dot00 * dot21 - dot20 * dot10) / (dot00 * dot11 - dot10 * dot10);
+    float alpha = 1.0f - beta - gamma;
 
-    return glm::vec3(alpha, beta, gamma);
+    return glm::vec3 { alpha, beta, gamma};
 }
 
 // TODO Standard feature
