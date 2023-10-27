@@ -45,7 +45,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
 glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2, const glm::vec3 bc)
 {
     // TODO: implement this function.
-    return glm::vec3(0.0);
+    return n0 * bc.x + n1 * bc.y + n2 * bc.z;
 }
 
 // TODO Standard feature
@@ -59,5 +59,5 @@ glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm:
 glm::vec2 interpolateTexCoord(const glm::vec2& t0, const glm::vec2& t1, const glm::vec2& t2, const glm::vec3 bc)
 {
 // TODO: implement this function.
-    return glm::vec2(0.0);
+    return t0 * bc.x + t1 * bc.y + t2 * bc.z;
 }
