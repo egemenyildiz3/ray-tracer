@@ -36,7 +36,7 @@ glm::vec3 renderRay(RenderState& state, Ray ray, int rayDepth)
     glm::vec3 Lo = computeLightContribution(state, ray, hitInfo);
 
     // Draw an example debug ray for the incident ray (feel free to modify this for yourself)
-    drawRay(ray, glm::vec3(1.0f));
+    drawRay(ray, glm::vec3(1.0f) / float(rayDepth + 1));
 
     // Given that recursive components are enabled, and we have not exceeded maximum depth,
     // estimate the contribution along these components
@@ -73,7 +73,14 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 {
     // TODO: generate a mirrored ray
     //       if you use glm::reflect, you will not get points for this method!
-    return Ray {};
+
+    Ray res;
+    float ofset = 0.01;
+
+    res.origin = ray.origin + (ray.t - ofset) * ray.direction;
+    res.direction = glm::normalize(ray.direction - 2.0f * (glm::dot(ray.direction, hitInfo.normal)) * hitInfo.normal);
+
+    return res;
 }
 
 // TODO: Standard feature
@@ -85,8 +92,12 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 // This method is unit-tested, so do not change the function signature.
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
-    // TODO: generate a passthrough ray
-    return Ray {};
+    // Create the passthrough ray starting from the intersection point
+    Ray ray1;
+    ray1.origin = ray.origin + ray.direction * (ray.t + 0.001f); // Use any point you have access to
+    ray1.direction = glm::normalize(ray.direction);
+
+    return ray1;
 }
 
 // TODO: standard feature
@@ -103,6 +114,7 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
 {
     // TODO; you should first implement generateReflectionRay()
     Ray r = generateReflectionRay(ray, hitInfo);
+    hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
     // ...
 }
 
@@ -118,7 +130,11 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
 // This method is unit-tested, so do not change the function signature.
 void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
-    // TODO; you should first implement generatePassthroughRay()
+    // TODO: you should first implement generatePassthroughRay()
     Ray r = generatePassthroughRay(ray, hitInfo);
-    // ...
+
+    glm::vec3 miss = renderRay(state, r, rayDepth + 1);
+   
+    const float alpha = hitInfo.material.transparency;
+    hitColor = hitColor * (1.0f - alpha) + miss * alpha;
 }
