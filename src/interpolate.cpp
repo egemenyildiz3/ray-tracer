@@ -27,7 +27,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
 glm::vec3 interpolateNormal(const glm::vec3& n0, const glm::vec3& n1, const glm::vec3& n2, const glm::vec3 bc)
 {
     // TODO: implement this function.
-    return glm::vec3(0.0);
+    return n0 * bc.x + n1 * bc.y + n2 * bc.z;
 }
 
 // TODO Standard feature
