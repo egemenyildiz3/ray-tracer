@@ -153,7 +153,7 @@ glm::vec3 LinearGradient::sample(float ti) const
         }
     }
 
-    return below.color + ti * (above.color - below.color);
+    return below.color + ((ti - below.t) / (above.t - below.t)) * (above.color - below.color);
 }
 
 // TODO: Standard feature
