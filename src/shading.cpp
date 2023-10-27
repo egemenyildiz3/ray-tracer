@@ -59,8 +59,9 @@ glm::vec3 computeShading(RenderState& state, const glm::vec3& cameraDirection, c
 // from the light, evaluate a Lambertian diffuse shading, returning the reflected light towards the target.
 glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
-    // Implement basic diffuse shading if you wish to use it
-    return sampleMaterialKd(state, hitInfo);
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    return lightColor * sampleMaterialKd(state, hitInfo) * glm::dot(ld, normal);
 }
 
 // TODO: Standard feature
@@ -81,7 +82,19 @@ glm::vec3 computeLambertianModel(RenderState& state, const glm::vec3& cameraDire
 glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
     // TODO: Implement phong shading
-    return sampleMaterialKd(state, hitInfo) * lightColor;
+    //return sampleMaterialKd(state, hitInfo) * lightColor;
+
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    glm::vec3 cd = glm::normalize(cameraDirection);
+
+    glm::vec3 reflectDirection = glm::normalize(-glm::reflect(ld, normal));
+    float dot = glm::max(0.0f, glm::dot(cd, reflectDirection));
+
+    glm::vec3 res = lightColor * hitInfo.material.ks * pow(dot, hitInfo.material.shininess);
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
+    return res + diffuse;
 }
 
 // TODO: Standard feature
@@ -102,7 +115,19 @@ glm::vec3 computePhongModel(RenderState& state, const glm::vec3& cameraDirection
 glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo)
 {
     // TODO: Implement blinn-phong shading
-    return sampleMaterialKd(state, hitInfo) * lightColor;
+    // return sampleMaterialKd(state, hitInfo) * lightColor;
+
+    glm::vec3 normal = glm::normalize(hitInfo.normal);
+    glm::vec3 ld = glm::normalize(lightDirection);
+    glm::vec3 cd = glm::normalize(cameraDirection);
+
+    glm::vec3 h = glm::normalize(ld + cd);
+    float dot = glm::max(0.0f, glm::dot(h, normal));
+
+    glm::vec3 res = lightColor * hitInfo.material.ks * pow(dot, hitInfo.material.shininess);
+    glm::vec3 diffuse = computeLambertianModel(state, cameraDirection, lightDirection, lightColor, hitInfo);
+
+    return res + diffuse;
 }
 
 // TODO: Standard feature
@@ -114,7 +139,21 @@ glm::vec3 computeBlinnPhongModel(RenderState& state, const glm::vec3& cameraDire
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 LinearGradient::sample(float ti) const
 {
-    return glm::vec3(0.5f);
+    Component below;
+    below.t = std::numeric_limits<float>::lowest();
+    Component above;
+    above.t = std::numeric_limits<float>::max();
+
+    for (Component c: this->components) {
+        if (c.t <= ti && c.t >= below.t) {
+                below = c;
+        }
+        if (c.t >= ti && c.t <= above.t) {
+                above = c;
+        }
+    }
+
+    return below.color + ti * (above.color - below.color);
 }
 
 // TODO: Standard feature
@@ -135,5 +174,5 @@ glm::vec3 LinearGradient::sample(float ti) const
 glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& cameraDirection, const glm::vec3& lightDirection, const glm::vec3& lightColor, const HitInfo& hitInfo, const LinearGradient& gradient)
 {
     float cos_theta = glm::dot(lightDirection, hitInfo.normal);
-    return glm::vec3(0.f);
+    return lightColor * sampleMaterialKd(state, hitInfo) * gradient.sample(cos_theta);
 }
