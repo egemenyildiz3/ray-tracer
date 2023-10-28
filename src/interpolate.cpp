@@ -14,7 +14,7 @@ glm::vec3 computeBarycentricCoord(const glm::vec3& v0, const glm::vec3& v1, cons
 {
     // TODO: implement this function.
 
-    // Taken from chapter 4 from RealTime Collison Detection by Christer Ericson
+    // Taken from chapter 4 from Real-Time Collison Detection by Christer Ericson
 
     glm::vec3 w0 = v1 - v0;
     glm::vec3 w1 = v2 - v0;
