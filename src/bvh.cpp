@@ -129,10 +129,10 @@ AxisAlignedBox computePrimitiveAABB(const BVHInterface::Primitive primitive)
 AxisAlignedBox computeSpanAABB(std::span<const BVHInterface::Primitive> primitives)
 {
     std::vector<AxisAlignedBox> aabbs;
-    glm::vec3 low { std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
-    glm::vec3 high { -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max(), -std::numeric_limits<float>::max() };
+    glm::vec3 low(std::numeric_limits<float>::max());
+    glm::vec3 high(std::numeric_limits<float>::lowest());
     AxisAlignedBox oi;
-    for (BVHInterface::Primitive prim : primitives) {
+    for (const BVHInterface::Primitive prim : primitives) {
         oi = computePrimitiveAABB(prim);
 
         low[0] = glm::min(low[0], oi.lower.x);
@@ -153,9 +153,9 @@ AxisAlignedBox computeSpanAABB(std::span<const BVHInterface::Primitive> primitiv
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computePrimitiveCentroid(const BVHInterface::Primitive primitive)
 {
-    float avgX = (primitive.v0.position[0] / 3.0f + primitive.v1.position[0] / 3.0f + primitive.v2.position[0] / 3.0f);
-    float avgY = (primitive.v0.position[1] / 3.0f + primitive.v1.position[1] / 3.0f + primitive.v2.position[1] / 3.0f);
-    float avgZ = (primitive.v0.position[2] / 3.0f + primitive.v1.position[2] / 3.0f + primitive.v2.position[2] / 3.0f);
+    float avgX = (primitive.v0.position[0] + primitive.v1.position[0] + primitive.v2.position[0]) / 3.0f ;
+    float avgY = (primitive.v0.position[1] + primitive.v1.position[1] + primitive.v2.position[1]) / 3.0f;
+    float avgZ = (primitive.v0.position[2] + primitive.v1.position[2] + primitive.v2.position[2]) / 3.0f;
 
     return { avgX, avgY, avgZ };
 }
@@ -506,7 +506,7 @@ std::vector<BVH::Node> debugLevelRecursive(std::vector<BVH::Node> currentLevel, 
 {
     if (levelsLeft == 0) return currentLevel;
     std::vector<BVH::Node> nextLevel;
-    for (BVH::Node nod : currentLevel) {
+    for (const BVH::Node nod : currentLevel) {
         if (!nod.isLeaf()) {
             nextLevel.push_back(m_nodes[nod.leftChild()]);
             nextLevel.push_back(m_nodes[nod.rightChild()]);
@@ -530,7 +530,7 @@ void BVH::debugDrawLevel(int level)
     // traverse and add the aabbs
      std::vector<BVH::Node> nodes = debugLevelRecursive({ m_nodes[BVH::RootIndex] }, level, m_nodes);
     // print all aabbs
-    for (BVH::Node box : nodes) {
+    for (const BVH::Node box : nodes) {
         drawAABB(box.aabb, DrawMode::Wireframe, {1.0f,1.05f,1.05f}, 0.1f);
     }
 }

@@ -5,13 +5,14 @@
 #include "scene.h"
 #include "shading.h"
 #include <limits>
+#include "interpolate.h"
 
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
 #include <catch2/catch_all.hpp>
 #include <glm/glm.hpp>
-#include <iostream>;
+#include <iostream>
 DISABLE_WARNINGS_POP()
 
 // In this file you can add your own unit tests using the Catch2 library.
@@ -22,8 +23,8 @@ DISABLE_WARNINGS_POP()
 // You don't have to hand them in; we will not consider them when grading.
 //
 
-void printVector(glm::vec3 input) {
-    std::cout << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
+void printVector(glm::vec3 input, std::string pre = ""){
+    std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
 }
 
 // Add your tests here, if you want :D
@@ -31,6 +32,26 @@ TEST_CASE("StudentTest")
 {
     // Add your own tests here...
 
+    SECTION("Bayocentric coordinates")
+    {
+        glm::vec3 a { .5, .5, 0 };
+        glm::vec3 b { 1, 1, 0 };
+        glm::vec3 c { -2, 1, 0 };
+
+        glm::vec3 p { 0.2123, 0.75, 0 };
+
+        glm::vec3 sol = computeBarycentricCoord(a, b, c, p);
+
+        printVector(sol);
+
+        glm::vec3 check = sol.x * a + sol.y * b + sol.z * c;
+
+        printVector(check, "Actual");
+        printVector(p, "Expected");
+
+        CHECK(check.x == p.x && check.y == p.b && check.z == p.z);
+    }
+    
     SECTION("computePrimitiveAABB")
     {
         BVHInterface::Primitive triangle;
@@ -124,7 +145,7 @@ TEST_CASE("StudentTest")
         };
         std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1, triangle2, triangle3, triangle4 };
         
-        int split = splitPrimitivesByMedian(box, axis, triangles);
+        size_t split = splitPrimitivesByMedian(box, axis, triangles);
         CHECK(split == 3);
         CHECK(triangles[0].operator==(triangle0));
         CHECK(triangles[1].operator==(triangle2));
