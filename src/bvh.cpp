@@ -181,30 +181,59 @@ uint32_t computeAABBLongestAxis(const AxisAlignedBox& aabb)
     return 0;
 }
 
-void swap(std::span<BVHInterface::Primitive> primitives, uint32_t i)
+void swap(std::span<BVHInterface::Primitive> primitives, int a, int b)
 {
-    BVHInterface::Primitive v = primitives[i];
-    primitives[i] = primitives[i - 1];
-    primitives[i - 1] = v;
+    BVHInterface::Primitive v = primitives[a];
+    primitives[a] = primitives[b];
+    primitives[b] = v;
     return;
 }
 
-void checkIndex(std::span<BVHInterface::Primitive> primitives, uint32_t i, uint32_t axis)
+void improvisedQuickSort(std::span<BVHInterface::Primitive> primitives, uint32_t axis, int middle)
 {
-    if (i == 0) return;
-    if (computePrimitiveCentroid(primitives[i - 1])[axis] > computePrimitiveCentroid(primitives[i])[axis]) {
-        swap(primitives, i);
-        checkIndex(primitives,i-1,axis);
-    }
-    return;
-}
+    BVH::Primitive pivotNode = primitives[glm::ceil(primitives.size() / 2.0f)];
+    float pivotValue = computePrimitiveCentroid(pivotNode)[axis];
 
-void insertionSort(std::span<BVHInterface::Primitive> primitives, uint32_t axis)
-{
-    for (uint32_t i = 0; i < primitives.size();i++) {
-        checkIndex(primitives, i, axis);
+    int a = 0;
+    int b = primitives.size()-1;
+
+    float za = computePrimitiveCentroid(primitives[a])[axis];
+    float zb = computePrimitiveCentroid(primitives[b])[axis];
+
+    while (a < b) {
+        if (zb <= pivotValue && za > pivotValue) {
+            swap(primitives, a, b);
+            za = computePrimitiveCentroid(primitives[a])[axis];
+            zb = computePrimitiveCentroid(primitives[b])[axis];
+        }
+        if (za <= pivotValue) {
+            a++;
+            za = computePrimitiveCentroid(primitives[a])[axis];
+        }
+        if (zb > pivotValue) {
+            b--;
+            zb = computePrimitiveCentroid(primitives[b])[axis];
+        }
     }
-    return;
+
+    // if we got the middle return
+    if (a == middle) {
+        return;
+    }
+    // if the pivot is left of the middle, do the right part again
+    if (a < glm::ceil(primitives.size() / 2.0f)) {
+        std::span<BVHInterface::Primitive> subset = primitives.subspan(a, primitives.size() - a);
+        int newMiddle = middle - a;
+        improvisedQuickSort(subset, axis, newMiddle);
+    }
+    // if the pivot is right of the middle, do the left part again
+    if (a > glm::ceil(primitives.size() / 2.0f)) {
+        std::span<BVHInterface::Primitive> subset = primitives.subspan(0, a);
+        int newMiddle = middle;
+        improvisedQuickSort(subset, axis, newMiddle);
+    }
+    
+
 }
 
 // TODO: Standard feature
@@ -221,7 +250,7 @@ size_t splitPrimitivesByMedian(const AxisAlignedBox& aabb, uint32_t axis, std::s
 {
     using Primitive = BVHInterface::Primitive;
 
-    insertionSort(primitives, axis);
+    improvisedQuickSort(primitives, axis, glm::ceil(primitives.size() / 2.0f));
     return glm::ceil(primitives.size() / 2.0f);
 }
 
@@ -279,17 +308,22 @@ bool intersectRayWithBVH(RenderState& state, const BVHInterface& bvh, Ray& ray, 
             BVHInterface::Node current = stack.back();
             stack.pop_back();
                 // if hit
+            float t = ray.t;
             if (intersectRayWithShape(current.aabb,ray)) {
+                ray.t = t;
                     // if leaf, check triangles within
                 if (current.isLeaf()) {
-                    uint32_t offset = current.primitiveOffset();
+                    uint32_t offset = (current.primitiveOffset() << 1) >> 1;
                     for (int i = 0; i < current.primitiveCount(); i++) {
                         BVHInterface::Primitive prim = primitives[offset + i];
-                        if (intersectRayWithTriangle(prim.v0.position,prim.v1.position,prim.v2.position,ray,hitInfo))
+                        const auto& [v0, v1, v2] = std::tie(prim.v0, prim.v1, prim.v2);
+                        if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
+                            // cehck if it is the closest hit
                             // change hitInfo
                             updateHitInfo(state, prim, ray, hitInfo);
                             // set hit to true
                             is_hit = true;
+                        }
                     }
                     // if node, just go to next
                 } else {
@@ -331,7 +365,7 @@ BVH::Node BVH::buildLeafData(const Scene& scene, const Features& features, const
     Node node;
     // TODO fill in the leaf's data; refer to `bvh_interface.h` for details
     node.aabb = aabb;
-    uint32_t offset = m_primitives.size() + ( 1 << 31);
+    uint32_t offset = m_primitives.size() + ( 1u << 31 );
     node.data = { offset,(uint32_t)primitives.size() };
 
     // Copy the current set of primitives to the back of the primitives vector
@@ -521,6 +555,12 @@ void BVH::debugDrawLeaf(int leafIndex)
         current = stack.back();
         stack.pop_back();
         if (current.isLeaf()) {
+            drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+            for (int i = 0; i < current.primitiveCount(); i++) {
+                BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
+                drawTriangle(prim.v0, prim.v1, prim.v2);
+                // prim.v0.position.r = 1.0f;
+            }
             leafIndex -= 1;
             continue;
         }
@@ -530,7 +570,8 @@ void BVH::debugDrawLeaf(int leafIndex)
     drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
     // give the primitives a dif color
     for (int i = 0; i < current.primitiveCount(); i++) {
-        m_primitives[current.primitiveOffset() + i].v0;
-        
+        BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
+        drawTriangle(prim.v0, prim.v1, prim.v2);
+        //prim.v0.position.r = 1.0f;
     }
 }
