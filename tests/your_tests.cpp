@@ -48,10 +48,10 @@ TEST_CASE("StudentTest")
         BVHInterface::Primitive triangle0 = {
             .v0 = { { 0.0f, 0.0f, 0.0f } },
             .v1 = { { 1.0f, 0.0f, 0.0f } },
-            .v2 = { { 0.0f, 1.0f, 0.0f } }
+            .v2 = { { 0.0f, 1.0f, 1.0f } }
         };
         BVHInterface::Primitive triangle1 = {
-            .v0 = { { 0.0f, 1.0f, 0.0f } },
+            .v0 = { { 7.0f, 1.0f, 0.0f } },
             .v1 = { { 1.0f, 0.0f, 0.0f } },
             .v2 = { { 0.0f, 1.0f, 0.0f } }
         };
@@ -61,8 +61,11 @@ TEST_CASE("StudentTest")
             .v2 = { { 4.0f, 1.0f, 0.0f } }
         };
         std::vector triangles = { triangle0, triangle1, triangle2 };
-        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 4, 4, 0 } };
+        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 7, 4, 1 } };
         AxisAlignedBox box = computeSpanAABB(triangles);
+
+        printVector(box.upper);
+        printVector(v.upper);
         CHECK(box.lower == v.lower);
         CHECK(box.upper == v.upper);
     }
@@ -128,7 +131,34 @@ TEST_CASE("StudentTest")
         CHECK(triangles[2].operator==(triangle3));
         CHECK(triangles[3].operator==(triangle1));
         CHECK(triangles[4].operator==(triangle4));
+    }
 
+    SECTION("buildLeafData")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1 };
+        Features features = {
+            .enableShading = true,
+            .enableAccelStructure = true,
+            .shadingModel = ShadingModel::Lambertian
+        };
+        Scene scene = loadScenePrebuilt(SceneType::CornellBox, DATA_DIR);
+        BVH bvh(scene, features);
+
+        //BVH::Node node = BVH::buildLeafData(scene, features, box, triangles);
     }
 
 }
