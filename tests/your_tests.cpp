@@ -5,7 +5,6 @@
 #include "scene.h"
 #include "shading.h"
 #include <limits>
-
 #include "interpolate.h"
 
 // Suppress warnings in third-party code.
@@ -24,9 +23,8 @@ DISABLE_WARNINGS_POP()
 // You don't have to hand them in; we will not consider them when grading.
 //
 
-void printVector(glm::vec3 v, std::string pre = "")
-{
-    std::cout << pre << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";
+void printVector(glm::vec3 input, std::string pre = ""){
+    std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
 }
 
 // Add your tests here, if you want :D
@@ -36,12 +34,12 @@ TEST_CASE("StudentTest")
 
     SECTION("Bayocentric coordinates")
     {
-        glm::vec3 a {.5, .5, 0 };
+        glm::vec3 a { .5, .5, 0 };
         glm::vec3 b { 1, 1, 0 };
         glm::vec3 c { -2, 1, 0 };
 
         glm::vec3 p { 0.2123, 0.75, 0 };
-        
+
         glm::vec3 sol = computeBarycentricCoord(a, b, c, p);
 
         printVector(sol);
@@ -52,6 +50,136 @@ TEST_CASE("StudentTest")
         printVector(p, "Expected");
 
         CHECK(check.x == p.x && check.y == p.b && check.z == p.z);
+    }
+    
+    SECTION("computePrimitiveAABB")
+    {
+        BVHInterface::Primitive triangle;
+        triangle.v0 = { { 0.0f, 0.0f, 0.0f } };
+        triangle.v1 = { { 1.0f, 0.0f, 0.0f } };
+        triangle.v2 = { { 0.0f, 1.0f, 0.0f } };
+        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 1, 1, 0 } };
+        AxisAlignedBox box = computePrimitiveAABB(triangle);
+        CHECK(box.lower ==  v.lower);
+        CHECK(box.upper == v.upper);
+    }
+
+    SECTION("computeSpanAABB") 
+    {
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 1.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 7.0f, 1.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 4.0f, 0.0f } },
+            .v2 = { { 4.0f, 1.0f, 0.0f } }
+        };
+        std::vector triangles = { triangle0, triangle1, triangle2 };
+        AxisAlignedBox v = { .lower = { 0, 0, 0 }, .upper = { 7, 4, 1 } };
+        AxisAlignedBox box = computeSpanAABB(triangles);
+
+        printVector(box.upper);
+        printVector(v.upper);
+        CHECK(box.lower == v.lower);
+        CHECK(box.upper == v.upper);
+    }
+
+    SECTION("computePrimitiveCentroid")
+    {
+        BVHInterface::Primitive triangle = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        glm::vec3 v = { 1.0f/3.0f,1.0f/3.0f,0 };
+        glm::vec3 center = computePrimitiveCentroid(triangle);
+        CHECK(v == center);
+    }
+
+    SECTION("computeAABBLongestAxis") 
+    {
+        AxisAlignedBox aabb { .lower = { 0,1,-2 }, .upper = {10,10,10} };
+        uint32_t v = 2;
+        uint32_t longest = computeAABBLongestAxis(aabb);
+        CHECK(v == longest);
+    }
+
+    SECTION("splitPrimitivesByMedian")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        int axis = 0; 
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 0.0f, 7.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
+        };
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1, triangle2, triangle3, triangle4 };
+        
+        size_t split = splitPrimitivesByMedian(box, axis, triangles);
+        CHECK(split == 3);
+        CHECK(triangles[0].operator==(triangle0));
+        CHECK(triangles[1].operator==(triangle2));
+        CHECK(triangles[2].operator==(triangle3));
+        CHECK(triangles[3].operator==(triangle1));
+        CHECK(triangles[4].operator==(triangle4));
+    }
+
+    SECTION("buildLeafData")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1 };
+        Features features = {
+            .enableShading = true,
+            .enableAccelStructure = true,
+            .shadingModel = ShadingModel::Lambertian
+        };
+        Scene scene = loadScenePrebuilt(SceneType::CornellBox, DATA_DIR);
+        BVH bvh(scene, features);
+
+        //BVH::Node node = BVH::buildLeafData(scene, features, box, triangles);
     }
 
 }
