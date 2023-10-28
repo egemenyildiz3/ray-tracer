@@ -91,7 +91,6 @@ std::vector<Ray> generatePixelRaysMultisampled(RenderState& state, const Trackba
     // Hint; use `state.sampler.next*d()` to generate random samples in [0, 1).
     auto numSamples = state.features.numPixelSamples;
     std::vector<Ray> rays;
-
     // ...
 
     glm::vec2 floatScreenResolution = screenResolution;
@@ -135,7 +134,7 @@ std::vector<Ray> generatePixelRaysStratified(RenderState& state, const Trackball
         for (int jOffSet = 0; jOffSet < numSamples; jOffSet++) {
             glm::vec2 rand = state.sampler.next_2d();
             glm::vec2 offSet = { iOffSet, jOffSet };
-            offSet /= float(numSamples); 
+            offSet /= float(numSamples);
 
             glm::vec2 newPixel = 2.0f * ((rand + floatPixel + offSet) / floatScreenResolution) - 1.0f ;
 

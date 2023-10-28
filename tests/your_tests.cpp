@@ -38,8 +38,6 @@ TEST_CASE("StudentTest")
     // Add your own tests here...
     SECTION("Bayocentric coordinates")
     {
-
-
         glm::vec3 a { .5, .5, 0 };
         glm::vec3 b { 1, 1, 0 };
         glm::vec3 c { -2, 1, 0 };
