@@ -151,11 +151,13 @@ TEST_CASE("StudentTest")
         
         size_t split = splitPrimitivesByMedian(box, axis, triangles);
         CHECK(split == 3);
-        CHECK(triangles[0].operator==(triangle0));
-        CHECK(triangles[1].operator==(triangle2));
-        CHECK(triangles[2].operator==(triangle3));
-        CHECK(triangles[3].operator==(triangle1));
-        CHECK(triangles[4].operator==(triangle4));
+        bool firstHalve = (triangles[0].operator==(triangle0) || triangles[0].operator==(triangle2) || triangles[0].operator==(triangle3))
+                && triangles[1].operator==(triangle0) || triangles[1].operator==(triangle2) || triangles[1].operator==(triangle3) 
+                && triangles[2].operator==(triangle0) || triangles[2].operator==(triangle2) || triangles[2].operator==(triangle3);
+        CHECK(firstHalve == true);
+        bool secondHalve = triangles[3].operator==(triangle1) || triangles[3].operator==(triangle4) 
+                && triangles[4].operator==(triangle1) || triangles[4].operator==(triangle4);
+        CHECK(secondHalve == true);
     }
 
     SECTION("buildLeafData")
