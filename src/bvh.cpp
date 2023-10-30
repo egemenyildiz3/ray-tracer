@@ -254,7 +254,15 @@ size_t splitPrimitivesByMedian(const AxisAlignedBox& aabb, uint32_t axis, std::s
     return glm::ceil(primitives.size() / 2.0f);
 }
 
-// TODO: Standard feature
+bool insideAabb(AxisAlignedBox aabb, Ray ray)
+{
+    bool x = aabb.lower.x < ray.origin.x && aabb.upper.x > ray.origin.x;
+    bool y = aabb.lower.y < ray.origin.y && aabb.upper.y > ray.origin.y;
+    bool z = aabb.lower.z < ray.origin.z && aabb.upper.z > ray.origin.z;
+    return x && y && z;
+}
+
+    // TODO: Standard feature
 // Hierarchy traversal routine; called by the BVH's intersect(),
 // you must implement this method and implement it carefully!
 //
@@ -309,7 +317,7 @@ bool intersectRayWithBVH(RenderState& state, const BVHInterface& bvh, Ray& ray, 
             stack.pop_back();
                 // if hit
             float t = ray.t;
-            if (intersectRayWithShape(current.aabb,ray)) {
+            if (intersectRayWithShape(current.aabb,ray) || insideAabb(current.aabb,ray)) {
                 ray.t = t;
                     // if leaf, check triangles within
                 if (current.isLeaf()) {
@@ -531,7 +539,7 @@ void BVH::debugDrawLevel(int level)
      std::vector<BVH::Node> nodes = debugLevelRecursive({ m_nodes[BVH::RootIndex] }, level, m_nodes);
     // print all aabbs
     for (const BVH::Node box : nodes) {
-        drawAABB(box.aabb, DrawMode::Wireframe, {1.0f,1.05f,1.05f}, 0.1f);
+        drawAABB(box.aabb, DrawMode::Filled, {1.0f,1.05f,1.05f}, 0.1f);
     }
 }
 
@@ -555,13 +563,18 @@ void BVH::debugDrawLeaf(int leafIndex)
         current = stack.back();
         stack.pop_back();
         if (current.isLeaf()) {
+            /*drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+            for (int i = 0; i < current.primitiveCount(); i++) {
+                BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
+                drawTriangle(prim.v0, prim.v1, prim.v2);
+            }*/
             leafIndex -= 1;
             continue;
         }
         stack.push_back(m_nodes[current.rightChild()]);
         stack.push_back(m_nodes[current.leftChild()]);
     }
-    drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.55f), 0.1f);
+    drawAABB(current.aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.55f), 0.1f);
     // give the primitives a dif color
     for (int i = 0; i < current.primitiveCount(); i++) {
         BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
