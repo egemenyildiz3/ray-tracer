@@ -256,10 +256,10 @@ size_t splitPrimitivesByMedian(const AxisAlignedBox& aabb, uint32_t axis, std::s
 
 bool insideAabb(AxisAlignedBox aabb, Ray ray)
 {
-    bool x = aabb.lower.x < ray.origin.x && aabb.upper.x > ray.origin.x;
-    bool y = aabb.lower.y < ray.origin.y && aabb.upper.y > ray.origin.y;
-    bool z = aabb.lower.z < ray.origin.z && aabb.upper.z > ray.origin.z;
-    return x && y && z;
+    bool x = ((aabb.lower.x < ray.origin.x) && (aabb.upper.x > ray.origin.x));
+    bool y = ((aabb.lower.y < ray.origin.y) && (aabb.upper.y > ray.origin.y));
+    bool z = ((aabb.lower.z < ray.origin.z) && (aabb.upper.z > ray.origin.z));
+    return (x && (y && z));
 }
 
     // TODO: Standard feature
