@@ -469,7 +469,7 @@ void BVH::buildRecursive(const Scene& scene, const Features& features, std::span
 
 int recursiveHeight(BVH::Node current, std::span<BVH::Node> m_nodes)
 {
-    if (current.isLeaf()) return 0;
+    if (current.isLeaf()) return 1;
     BVH::Node left = m_nodes[current.leftChild()];
     BVH::Node right = m_nodes[current.rightChild()];
     int height = glm::max(recursiveHeight(left,m_nodes),recursiveHeight(right,m_nodes)) + 1;
@@ -504,7 +504,7 @@ void BVH::buildNumLeaves()
 
 std::vector<BVH::Node> debugLevelRecursive(std::vector<BVH::Node> currentLevel, int levelsLeft, std::span<BVH::Node> m_nodes)
 {
-    if (levelsLeft == 0) return currentLevel;
+    if (levelsLeft <= 0) return currentLevel;
     std::vector<BVH::Node> nextLevel;
     for (const BVH::Node nod : currentLevel) {
         if (!nod.isLeaf()) {
@@ -555,19 +555,13 @@ void BVH::debugDrawLeaf(int leafIndex)
         current = stack.back();
         stack.pop_back();
         if (current.isLeaf()) {
-            drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
-            for (int i = 0; i < current.primitiveCount(); i++) {
-                BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
-                drawTriangle(prim.v0, prim.v1, prim.v2);
-                // prim.v0.position.r = 1.0f;
-            }
             leafIndex -= 1;
             continue;
         }
         stack.push_back(m_nodes[current.rightChild()]);
         stack.push_back(m_nodes[current.leftChild()]);
     }
-    drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+    drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.55f), 0.1f);
     // give the primitives a dif color
     for (int i = 0; i < current.primitiveCount(); i++) {
         BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
