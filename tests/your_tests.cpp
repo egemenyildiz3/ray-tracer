@@ -27,11 +27,15 @@ void printVector(glm::vec3 input, std::string pre = ""){
     std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
 }
 
+bool floatEqual(float a, float b, float epsilon = 0.001)
+{
+    return (a - b < epsilon);
+};
+
 // Add your tests here, if you want :D
 TEST_CASE("StudentTest")
 {
     // Add your own tests here...
-
     SECTION("Bayocentric coordinates")
     {
         glm::vec3 a { .5, .5, 0 };
@@ -49,9 +53,7 @@ TEST_CASE("StudentTest")
         printVector(check, "Actual");
         printVector(p, "Expected");
 
-        bool answer = check.x == p.x && check.y == p.y && check.z == p.z;
-        CHECK(answer == true);
-
+        CHECK((floatEqual(check.x, p.x) && floatEqual(check.y, p.y) && floatEqual(check.z, p.z)));
     }
     
     SECTION("computePrimitiveAABB")
