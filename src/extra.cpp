@@ -4,6 +4,13 @@
 #include "recursive.h"
 #include "shading.h"
 #include <framework/trackball.h>
+#include <draw.h>
+#include <iostream>
+
+void printVector(glm::vec3 input, std::string pre = "")
+{
+    std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
+}
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -62,8 +69,32 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
     // Generate an initial specular ray, and base secondary glossies on this ray
-    // auto numSamples = state.features.extra.numGlossySamples;
     // ...
+
+    float numSamples = state.features.extra.numGlossySamples;
+    float n = numSamples / 64;
+
+    glm::vec2 xi = state.sampler.next_2d();
+    float theta = glm::acos(glm::pow(1 - xi[0], 1/(n+1)));
+    float phi = glm::two_pi<float>() * xi[1]; 
+
+    //We use the method from the book in 14.4.1 to get a random vector direction uniformly distributed over a hemisphere.
+    //glm::vec3 randomDirection = { 
+    //    glm::cos(glm::two_pi<float>() * xi[0]) * glm::sqrt(xi[1]),
+    //    glm::sin(glm::two_pi<float>() * xi[0]) * glm::sqrt(xi[1]),
+    //    glm::sqrt(1 - xi[1]) };
+     glm::vec3 randomDirection = {  
+        glm::cos(glm::two_pi<float>() * xi[0]) * glm::sqrt(xi[1]),
+        glm::sin(glm::two_pi<float>() * xi[0]) * glm::sqrt(xi[1]),
+        glm::sqrt(1 - xi[1]) };
+
+
+    Ray r = generateReflectionRay(ray, hitInfo);
+    r.direction += randomDirection * n;
+
+    hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
+
+    
 }
 
 // TODO; Extra feature
