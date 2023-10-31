@@ -5,6 +5,7 @@
 Scene loadScenePrebuilt(SceneType type, const std::filesystem::path& dataDir)
 {
     Scene scene;
+    //scene.envMap = Image(std::filesystem::path("../../../data/emoji.png"));
     scene.type = type;
     switch (type) {
     case SingleTriangle: {

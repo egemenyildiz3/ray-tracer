@@ -12,6 +12,12 @@
 #include <omp.h>
 #endif
 
+#include <iostream>
+void printVector(glm::vec2 input, std::string pre = "")
+{
+    std::cout << pre << "[ " << input[0] << ", " << input[1] << " ]\n";
+}
+
 // This function is provided as-is. You do not have to implement it.
 // Given relevant objects (scene, bvh, camera, etc) and an output screen, multithreaded fills
 // each of the pixels using one of the below `renderPixel*()` functions, dependent on scene
@@ -86,6 +92,19 @@ std::vector<Ray> generatePixelRaysMultisampled(RenderState& state, const Trackba
     auto numSamples = state.features.numPixelSamples;
     std::vector<Ray> rays;
     // ...
+
+    glm::vec2 floatScreenResolution = screenResolution;
+    glm::vec2 floatPixel = pixel;
+
+    for (int i = 0; i < numSamples; i++) {
+        glm::vec2 rand = state.sampler.next_2d();
+
+        glm::vec2 newPixel = 2.0f * (floatPixel + rand) / floatScreenResolution - 1.0f;
+        Ray r = camera.generateRay(newPixel);
+
+        rays.push_back(r);
+    }
+
     return rays;
 }
 
@@ -107,5 +126,23 @@ std::vector<Ray> generatePixelRaysStratified(RenderState& state, const Trackball
     auto numSamples = static_cast<uint32_t>(std::round(std::sqrt(float(state.features.numPixelSamples))));
     std::vector<Ray> rays;
     // ...
+
+    glm::vec2 floatScreenResolution = screenResolution;
+    glm::vec2 floatPixel = pixel;
+
+    for (int iOffSet = 0; iOffSet < numSamples; iOffSet++) {
+        for (int jOffSet = 0; jOffSet < numSamples; jOffSet++) {
+            glm::vec2 rand = state.sampler.next_2d();
+            glm::vec2 offSet = { iOffSet, jOffSet };
+            offSet /= float(numSamples);
+
+            glm::vec2 newPixel = 2.0f * ((rand + floatPixel + offSet) / floatScreenResolution) - 1.0f ;
+
+            Ray r = camera.generateRay(newPixel);
+
+            rays.push_back(r);
+        }
+    }
+
     return rays;
 }
