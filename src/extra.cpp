@@ -73,7 +73,7 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
     // ...
 
     float numSamples = state.features.extra.numGlossySamples;
-    float n = numSamples / 64;
+    float n = glm::pow(numSamples / 64, 4); // The reason I do it squared is so that the glossiness changes less in the beginning
 
     // We use the method from the book in 14.4.1 to get a random vector direction uniformly distributed over a hemisphere.
     glm::vec2 xi = state.sampler.next_2d();
