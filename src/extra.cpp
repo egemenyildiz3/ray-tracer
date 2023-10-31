@@ -4,6 +4,7 @@
 #include "recursive.h"
 #include "shading.h"
 #include <framework/trackball.h>
+#include <texture.cpp>
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -78,7 +79,14 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
 {
     if (state.features.extra.enableEnvironmentMap) {
         // Part of your implementation should go here
-        return glm::vec3(0.f);
+        Image map = state.scene.envMap;
+        
+        glm::vec3 dir = glm::normalize(ray.direction);
+        glm::vec2 coords { 0, 0.5 };
+
+        return sampleTextureNearest(map, coords);
+
+        return glm::vec3 { 0, 1, 0 };
     } else {
         return glm::vec3(0.f);
     }
