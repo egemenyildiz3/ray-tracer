@@ -82,7 +82,7 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
         Image map = state.scene.envMap;
         
         glm::vec3 dir = glm::normalize(ray.direction);
-        glm::vec2 coords { 0, 0.5 };
+        glm::vec2 coords { std::fmod(1.0f, dir [0]), std::fmod(1.0f, dir[1]) };
 
         return sampleTextureNearest(map, coords);
 
