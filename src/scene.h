@@ -36,7 +36,8 @@ struct Scene {
 
     // You can add your own objects (e.g. environment maps) here
     // ...
-};
+    Image envMap = Image(std::filesystem::path("../../../data/default.png"));
+};  
 
 // Load a prebuilt scene.
 Scene loadScenePrebuilt(SceneType type, const std::filesystem::path& dataDir);
