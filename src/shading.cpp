@@ -176,9 +176,6 @@ glm::vec3 computeLinearGradientModel(RenderState& state, const glm::vec3& camera
     glm::vec3 normal = glm::normalize(hitInfo.normal);
     glm::vec3 ld = glm::normalize(lightDirection);
 
-    if (glm::dot(normal, ld) <= 0)
-        return glm::vec3 { 0, 0, 0 };
-
     float cos_theta = glm::dot(ld, normal);
     return lightColor * gradient.sample(cos_theta) * glm::dot(ld, normal);
 }
