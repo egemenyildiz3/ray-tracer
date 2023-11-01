@@ -111,7 +111,7 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
 {
     using Primitive = BVH::Primitive;
 
-    // sort the primitives
+    // sort the primitives on basis of the right axis, low to high, internal sort, like you have to sort the array itself
 
 
     // initiate variables
