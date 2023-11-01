@@ -73,25 +73,32 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
     // ...
 
     float numSamples = state.features.extra.numGlossySamples;
-    float n = glm::pow(numSamples / 64, 4); // The reason I do it squared is so that the glossiness changes less in the beginning
-
-    // We use the method from the book in 14.4.1 to get a random vector direction uniformly distributed over a hemisphere.
-    glm::vec2 xi = state.sampler.next_2d();
-    float theta = glm::acos(glm::pow(1 - xi[0], 1/(n+1)));
-    float phi = glm::two_pi<float>() * xi[1]; 
-
-    // Get a vector from the angles theta and phi. The optimization in the book dit not mention what to do if n was not 1.
-     glm::vec3 randomDirection = {  
-        glm::cos(theta) * glm::sin(phi),
-        glm::sin(theta) * glm::cos(phi),
-        glm::sin(phi) };
+    float n = hitInfo.material.shininess / 64; // The reason I do it squared is so that the glossiness changes less in the beginning
 
     Ray r = generateReflectionRay(ray, hitInfo);
-    r.direction += randomDirection * n;
 
-    hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
+    glm::vec3 w = glm::normalize(r.direction);
+    glm::vec3 t = { 1, 0, 0 };
+    if (r.direction.y == r.direction.z == 0)
+        t = { 0, 1, 0 };
+    glm::vec3 v = glm::normalize(glm::cross(r.direction, t));
+    glm::vec3 u = glm::cross(w, v);
 
-    
+    // We use the method from the book in 14.4.1 to get a random vector direction uniformly distributed over a hemisphere.
+    for (int i = 0; i < numSamples; i++) {
+        glm::vec2 xi = state.sampler.next_2d();
+        float radius = glm::sqrt(xi[0]) * n;
+        float phi = glm::two_pi<float>() * xi[1];
+
+        float a = (-radius / 2) + xi[0] * radius; 
+        float b = (-radius / 2) + xi[1] * radius; 
+
+        glm::vec3 randomDirection = a * u + b * v;
+
+        r.direction += randomDirection;
+
+        hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
+    }
 }
 
 // TODO; Extra feature
