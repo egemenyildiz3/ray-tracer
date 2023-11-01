@@ -199,6 +199,44 @@ TEST_CASE("StudentTest")
         CHECK(split == 4);
     }
 
+        SECTION("splitPrimitivesBySAHBin_unsorted")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        int axis = 0;
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 10.0f, 7.0f, 0.0f } },
+            .v1 = { { 7.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
+        };
+        //unsorted
+        std::vector<BVHInterface::Primitive> triangles { triangle3, triangle1, triangle4, triangle0, triangle2 };
+
+        size_t split = splitPrimitivesBySAHBin(box, axis, triangles);
+        CHECK(split == 4);
+    }
 }
 
 // The below tests are not "good" unit tests. They don't actually test correctness.
