@@ -6,6 +6,7 @@
 #include "shading.h"
 #include <limits>
 #include "interpolate.h"
+#include "extra.h"
 
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
@@ -160,12 +161,13 @@ TEST_CASE("StudentTest")
         CHECK(secondHalve == true);
     }
 
-    SECTION("buildLeafData")
+    SECTION("splitPrimitivesBySAHBin_sorted")
     {
         AxisAlignedBox box {
             .lower = { 0, 0, 0 },
             .upper = { 10, 10, 10 }
         };
+        int axis = 0;
         BVHInterface::Primitive triangle0 = {
             .v0 = { { 0.0f, 0.0f, 0.0f } },
             .v1 = { { 0.5f, 0.0f, 0.0f } },
@@ -173,19 +175,28 @@ TEST_CASE("StudentTest")
         };
         BVHInterface::Primitive triangle1 = {
             .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
             .v1 = { { 5.0f, 0.0f, 0.0f } },
             .v2 = { { 0.0f, 1.0f, 0.0f } }
         };
-        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1 };
-        Features features = {
-            .enableShading = true,
-            .enableAccelStructure = true,
-            .shadingModel = ShadingModel::Lambertian
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 10.0f, 7.0f, 0.0f } },
+            .v1 = { { 7.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
         };
-        Scene scene = loadScenePrebuilt(SceneType::CornellBox, DATA_DIR);
-        BVH bvh(scene, features);
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1, triangle2, triangle3, triangle4 };
 
-        //BVH::Node node = BVH::buildLeafData(scene, features, box, triangles);
+        size_t split = splitPrimitivesBySAHBin(box, axis, triangles);
+        CHECK(split == 4);
     }
 
 }

@@ -92,6 +92,12 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
     }
 }
 
+float areaAabb(AxisAlignedBox aabb) {
+    float x = aabb.upper.x - aabb.lower.x;
+    float y = aabb.upper.y - aabb.lower.y;
+    float z = aabb.upper.z - aabb.lower.z;
+    return x * y * z;
+}
 
 // TODO: Extra feature
 // As an alternative to `splitPrimitivesByMedian`, use a SAH+binning splitting criterion. Refer to
@@ -105,5 +111,51 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
 {
     using Primitive = BVH::Primitive;
 
-    return 0; // This is clearly not the solution
+    // sort the primitives
+
+
+    // initiate variables
+    int sizePrim = primitives.size();
+    int amountSplits = sizePrim / 4; // #bins = 1/4 of #primitives
+    float sizePerBin = (aabb.upper[axis] - aabb.lower[axis]) / (amountSplits + 1);
+    float minArea = std::numeric_limits<float>::max(); // a variable to check which area is the best
+    float newArea;
+    int MinIndex = sizePrim/2; // the index of the divide with the lowers area
+    float distOnLine; // the actual dist of the bin divider
+    int lastJ = 0; // variable to make shifting through the array easier and faster
+    Primitive prim;
+    AxisAlignedBox aabbLower;
+    AxisAlignedBox aabbUpper;
+
+    // loop through all bins
+    for (int i = 0; i < amountSplits; i++) {
+        distOnLine = (i + 1) * sizePerBin;
+        
+        // search for the end of the bin
+        for (int j = lastJ; j < sizePrim; j++) {
+            prim = primitives[j];
+            // if the centroid is over the border, save the last primitive that was not over the border
+            if (computePrimitiveCentroid(prim)[axis] > distOnLine) {
+                // save the index of the next primitive to test
+                lastJ = j;
+                if (lastJ == 0) {
+                    lastJ = 1;
+                    break;
+                }
+                
+                // get the areas of the two bins that you made
+                aabbLower = computeSpanAABB(primitives.subspan(0, lastJ));
+                aabbUpper = computeSpanAABB(primitives.subspan(lastJ, primitives.size() - lastJ));
+                newArea = areaAabb(aabbLower) + areaAabb(aabbUpper);
+
+                // see if it is better than the last bins
+                if (newArea < minArea) {
+                    minArea = newArea;
+                    MinIndex = lastJ;
+                }
+                break;
+            }
+        }
+    }
+    return MinIndex;
 }
