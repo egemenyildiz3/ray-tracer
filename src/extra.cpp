@@ -75,18 +75,18 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // - ray;   ray object
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
-glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
+glm::vec3 sampleEnvironmentMap(RenderState& state, const Ray ray)
 {
     if (state.features.extra.enableEnvironmentMap) {
         // Part of your implementation should go here
         Image map = state.scene.envMap;
-        
-        glm::vec3 dir = glm::normalize(ray.direction);
-        glm::vec2 coords { std::fmod(1.0f, dir [0]), std::fmod(1.0f, dir[1]) };
 
-        return sampleTextureNearest(map, coords);
+        int i = glm::round(glm::abs(ray.direction.x) * map.width - 0.5);
+        int j = glm::round(glm::abs(ray.direction.y) * map.height - 0.5);
+        return glm::vec3(0.f);
 
-        return glm::vec3 { 0, 1, 0 };
+        return map.pixels[i + j * map.width];
+
     } else {
         return glm::vec3(0.f);
     }
