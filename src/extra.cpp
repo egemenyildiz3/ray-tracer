@@ -7,6 +7,16 @@
 #include <texture.cpp>
 #include <iostream>
 
+
+glm::vec3 avg(std::vector<glm::vec3> input)
+{
+    glm::vec3 output {};
+    for (glm::vec3 i : input) {
+        output += (1.0f / input.size()) * i;
+    }
+    return output;
+}
+
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
 // of Depth of Field. Here, you generate camera rays s.t. a focus point and a thin lens camera model
