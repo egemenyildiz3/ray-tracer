@@ -22,7 +22,7 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     // Note, the center of the first pixel is at image coordinates (0.5, 0.5)
 
     int i = glm::round(texCoord.x * image.width - 0.5);
-    int j = glm::round(texCoord.y * image.height - 0.5);
+    int j = glm::round((1 - texCoord.y) * image.height - 0.5);
 
     return image.pixels[i + j * image.width];
 }
@@ -52,7 +52,18 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 
     // Brightspace video: https://brightspace.tudelft.nl/d2l/le/content/595314/viewContent/3512131/View
 
-    const glm::vec2 imgCoords = { texCoord.x * image.width - 0.5, texCoord.y * image.height - 0.5 };
+    float texX = texCoord.x; 
+    float texY = texCoord.y;
+    if (texX == 0)
+        texX++;
+    if (texY == 0)
+        texY++;
+    if (texX == image.width)
+        texX--;
+    if (texY == image.height)
+        texY--;
+        
+    const glm::vec2 imgCoords = { texX * image.width - 0.5, (1 - texY) * image.height - 0.5 };
 
     int x1 = glm::floor(imgCoords.x);
     int y1 = glm::floor(imgCoords.y);

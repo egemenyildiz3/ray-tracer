@@ -172,8 +172,6 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
         glm::vec2 coords { std::fmod(1.0f, dir [0]), std::fmod(1.0f, dir[1]) };
 
         return sampleTextureNearest(map, coords);
-
-        return glm::vec3 { 0, 1, 0 };
     } else {
         return glm::vec3(0.f);
     }
