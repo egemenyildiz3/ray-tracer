@@ -96,20 +96,43 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
     if (visibilityOfLightSampleBinary(state, lightPosition, lightColor, ray, hitInfo)) {
-        return lightColor;
+            return lightColor;
     }
-    glm::vec3 shadowDir = glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction));
+    bool check = false;
+    glm::vec3 newCol = lightColor;
+    glm::vec3 pos = (ray.origin + ray.t * ray.direction) - lightPosition;
+    glm::vec3 vec1 = { 1.0f, 1.0f, 1.0f };
+
     Ray ray1;
-    ray1.origin = ray.origin + ray.t * ray.direction + shadowDir * 0.001f; 
-    ray1.direction = shadowDir;
+    HitInfo newHit = hitInfo;
+    Ray newRay = ray;
+    glm::vec3 newDir = ray.direction;
+       do {
+            glm::vec3 shDir = glm::normalize(lightPosition - (myRay.origin + myRay.t * myRay.direction));
 
-    HitInfo hitNew;
-    state.bvh.intersect(state, ray1, hitNew);
-    glm::vec3 a = sampleMaterialKd(state, hitNew);
+            ray1.origin = myRay.origin + myRay.t * myRay.direction + shadowRayDirection * 0.001f; 
+            ray1.direction = shadowRayDirection;
+            pos = lightPosition - shadowRay.origin;
+            
+            shadowRay.t = FLT_MAX;
+            check = state.bvh.intersect(state, shadowRay, shadowHit);
+            glm::vec3 updateK = sampleMaterialKd(state, shadowHit);
+            
+            if (glm::length(pos)  <= shadowRay.t + 0.001f)
+            break;
 
-    glm::vec3 ret = a * lightColor * (1.0f - hitNew.material.transparency);   
+            if (!check)
+                {}
+            else {
+            x = x * ( updateK * (1.0f - newHit.material.transparency));
+            }
+            newHit = hitInfo;
+            newRay = shadowRay;
+
+       }while (newRay.t + 0.001f <= glm::length(pos));
+
+    glm::vec3 ret = x * lightcolor;
     return ret;
-
 }
 
 // TODO: Standard feature
