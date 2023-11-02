@@ -35,6 +35,15 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 
 }
 
+int fac(int n)
+{
+    if (n == 1 || n == 0) {
+        return 1;
+    }
+    return n * fac(n - 1);
+}
+
+
 // TODO; Extra feature
 // Given a rendered image, compute and apply a bloom post-processing effect to increase bright areas.
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
@@ -125,15 +134,6 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
         }
     }
 }
-
-int fac(int n)
-{
-    if (n == 1 || n == 0) {
-        return 1;
-    }
-    return n * fac(n - 1);
-}
-
 
 // TODO; Extra feature
 // Given a camera ray (or reflected camera ray) and an intersection, evaluates the contribution of a set of
