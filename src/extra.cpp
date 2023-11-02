@@ -57,11 +57,11 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
     }
 
     Screen blurry(bloomy.resolution(), true);
-   
+    int wh = 10;
     std::vector<float> detector;
 
-    for (int a = 0; a < 10; a++) {
-        float note = fac(9) / ((float)fac(10 - a - 1) * (float)fac(a));
+    for (int a = 0; a < wh; a++) {
+        float note = fac(wh - 1) / ((float)fac(wh - a - 1) * (float)fac(a));
         detector.push_back(note);
     }
 
@@ -82,8 +82,8 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             float gr = 0.0f;
             float b = 0.0f;
 
-            for (int c = 0; c < 10; c++) {
-                int q = m - 9 / 2 + c;
+            for (int c = 0; c < wh; c++) {
+                int q = m - (wh-1) / 2 + c;
                 if (q < image.resolution().x && q >= 0) {
                     glm::vec3 recent = image.pixels()[image.indexAt(q, n)];
                     re = re + recent.r * detector[c];
@@ -100,8 +100,8 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             float gr = 0.0f;
             float b = 0.0f;
 
-            for (int c = 0; c < 10; c++) {
-                int q = b - (9 / 2) + c;
+            for (int c = 0; c < wh; c++) {
+                int q = b - (wh-1) / 2 + c;
                 if (q >= 0 && q < image.resolution().y) {
                     glm::vec3 recent = newPhoto.pixels()[newPhoto.indexAt(a, q)];
                     re = re + recent.r * detector[c];
