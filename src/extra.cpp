@@ -45,7 +45,93 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
         return;
     }
 
-    // ...
+    Screen bloomy(image.resolution(), true);
+
+    for (int x = 0; x < bloomy.resolution().x; x++) {
+        for (int y = 0; y < bloomy.resolution().y; y++) {
+            glm::vec3 currentPixel = image.pixels()[image.indexAt(x, y)];
+            if (currentPixel.r >= 0.8f || currentPixel.g >= 0.8f || currentPixel.b >= 0.8f) {
+                bloomy.setPixel(x, y, currentPixel);
+            }
+        }
+    }
+
+    Screen blurry(bloomy.resolution(), true);
+   
+    std::vector<float> detector;
+
+    for (int a = 0; a < 10; a++) {
+        float note = fac(9) / ((float)fac(10 - a - 1) * (float)fac(a));
+        detector.push_back(note);
+    }
+
+    float add = 0.0f;
+    for (const auto& x : detector) {
+        add = add + x;
+    }
+
+    for (auto& x : detector) {
+        x = x / add;
+    }
+
+    Screen newPhoto(bloomy.resolution(), true);
+
+    for (int m = 0; m < bloomy.resolution().y; m++) {
+        for (int n = 0; n < bloomy.resolution().x; n++) {
+            float re = 0.0f;
+            float gr = 0.0f;
+            float b = 0.0f;
+
+            for (int c = 0; c < 10; c++) {
+                int q = m - 9 / 2 + c;
+                if (q < image.resolution().x && q >= 0) {
+                    glm::vec3 recent = image.pixels()[image.indexAt(q, n)];
+                    re = re + recent.r * detector[c];
+                    gr = gr + recent.g * detector[c];
+                    b = b + recent.b * detector[c];
+                }
+            }
+            newPhoto.setPixel(m, n, glm::vec3(re, gr, b));
+        }
+    }
+    for (int a = 0; a < bloomy.resolution().y; a++) {
+        for (int n = 0; n < bloomy.resolution().x; n++) {
+            float re = 0.0f;
+            float gr = 0.0f;
+            float b = 0.0f;
+
+            for (int c = 0; c < 10; c++) {
+                int q = b - (9 / 2) + c;
+                if (q >= 0 && q < image.resolution().y) {
+                    glm::vec3 recent = newPhoto.pixels()[newPhoto.indexAt(a, q)];
+                    re = re + recent.r * detector[c];
+                    gr = gr + recent.g * detector[c];
+                    b = b + recent.b * detector[c];
+                }
+            }
+            blurry.setPixel(a, b, glm::vec3(re, gr, b));
+        }
+    }
+
+    for (int a = 0; a < image.resolution().y; a++) {
+        for (int b = 0; b < image.resolution().x; b++) {
+            glm::vec3 newPix = blurry.pixels()[blurry.indexAt(a, b)] + image.pixels()[image.indexAt(a, b)];
+            for (int m = 0; m < 3; m++) {
+                if (newPix[m] > 1) {
+                    newPix[m] = 1;
+                }
+            }
+            image.setPixel(a, b, newPix);
+        }
+    }
+}
+
+int fac(int n)
+{
+    if (n == 1 || n == 0) {
+        return 1;
+    }
+    return n * fac(n - 1);
 }
 
 
