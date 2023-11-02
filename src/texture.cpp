@@ -57,9 +57,6 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
     int x1 = glm::floor(imgCoords.x);
     int y1 = glm::floor(imgCoords.y);
 
-    if (x1 == 0 || y1 == 0)
-        return glm::vec3 { 1, 0, 0 };
-
     const glm::vec2 p1 = { x1,     y1 };
     const glm::vec2 p2 = { x1 + 1, y1 };
     const glm::vec2 p3 = { x1,     y1 + 1 };

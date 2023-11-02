@@ -48,11 +48,11 @@ void updateHitInfo(RenderState& state, const BVHInterface::Primitive& primitive,
 // NOTE: this constructor is tested, so do not change the function signature.
 BVH::BVH(const Scene& scene, const Features& features)
 {
-#ifndef NDEBUG
+//#ifndef NDEBUG
     // Store start of bvh build for timing
     using clock = std::chrono::high_resolution_clock;
     const auto start = clock::now();
-#endif
+//#endif
 
     // Count the total nr. of triangles in the scene
     size_t numTriangles = 0;
@@ -61,6 +61,7 @@ BVH::BVH(const Scene& scene, const Features& features)
 
     // Given the input scene, gather all triangles over which to build the BVH as a list of Primitives
     std::vector<Primitive> primitives;
+    std::cout << "Number of triangles: " << numTriangles << "\n";
     primitives.reserve(numTriangles);
     for (uint32_t meshID = 0; meshID < scene.meshes.size(); meshID++) {
         const auto& mesh = scene.meshes[meshID];
@@ -86,11 +87,11 @@ BVH::BVH(const Scene& scene, const Features& features)
     buildNumLevels();
     buildNumLeaves();
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
     // Output end of bvh build for timing
     const auto end = clock::now();
     std::cout << "BVH construction time: " << std::chrono::duration<double, std::milli>(end - start).count() << "ms" << std::endl;
-#endif
+//#endif
 }
 
 // BVH helper method; allocates a new node and returns its index
