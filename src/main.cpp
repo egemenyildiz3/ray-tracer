@@ -32,6 +32,8 @@ DISABLE_WARNINGS_POP()
 #include <thread>
 #include <variant>
 
+std::vector<float> durations;
+
 // This is the main application. The code in here does not need to be modified.
 enum class ViewMode {
     Rasterization = 0,
@@ -418,7 +420,15 @@ int main(int argc, char** argv)
                 renderImage(scene, bvh, config.features, camera, screen);
                 const auto end = clock::now();
                 const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-                fmt::print("Rendering took {} ms.\n", duration);
+
+                durations.push_back(duration);
+                float avg = 0;
+                for (float f : durations) {
+                    avg += f;
+                }
+                avg /= durations.size();
+
+                fmt::print("Rendering took {} ms; average time: {} out of {} measurements:.\n", duration, avg, durations.size());
                 screen.setPixel(0, 0, glm::vec3(1.0f));
                 screen.draw(); // Takes the image generated using ray tracing and outputs it to the screen using OpenGL.
             } break;

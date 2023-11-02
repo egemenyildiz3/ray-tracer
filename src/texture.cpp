@@ -22,7 +22,7 @@ glm::vec3 sampleTextureNearest(const Image& image, const glm::vec2& texCoord)
     // Note, the center of the first pixel is at image coordinates (0.5, 0.5)
 
     int i = glm::round(texCoord.x * image.width - 0.5);
-    int j = glm::round(texCoord.y * image.height - 0.5);
+    int j = glm::round((1 - texCoord.y) * image.height - 0.5);
 
     return image.pixels[i + j * image.width];
 }
@@ -41,6 +41,7 @@ glm::vec3 getPixel(const Image& image, const glm::vec2& p)
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 {
+    //return sampleTextureNearest(image, texCoord);
     // TODO: implement this function.
     // Note: the pixels are stored in a 1D array, row-major order. You can convert from (i, j) to
     //       an index using the method seen in the lecture.
@@ -52,13 +53,19 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
 
     // Brightspace video: https://brightspace.tudelft.nl/d2l/le/content/595314/viewContent/3512131/View
 
-    const glm::vec2 imgCoords = { texCoord.x * image.width - 0.5, texCoord.y * image.height - 0.5 };
+    const glm::vec2 imgCoords = { texCoord.x * image.width - 0.5, (1 - texCoord.y) * image.height - 0.5 };
 
     int x1 = glm::floor(imgCoords.x);
     int y1 = glm::floor(imgCoords.y);
 
-    if (x1 == 0 || y1 == 0)
-        return glm::vec3 { 1, 0, 0 };
+    if (x1 < 0)
+        x1 = 0;
+    if (y1 < 0)
+        y1 = 0;
+    if (x1 > image.width - 2)
+        x1--;
+    if (y1 > image.height - 2)
+        y1--;
 
     const glm::vec2 p1 = { x1,     y1 };
     const glm::vec2 p2 = { x1 + 1, y1 };
@@ -68,11 +75,11 @@ glm::vec3 sampleTextureBilinear(const Image& image, const glm::vec2& texCoord)
     float a = imgCoords.x - x1; 
     float b = imgCoords.y - y1;
 
-    glm::vec3 res;
-    res += getPixel(image, p1) * (1-a) * (1-b);
-    res += getPixel(image, p2) * ( a ) * (1-b);
-    res += getPixel(image, p3) * (1-a) * ( b );
-    res += getPixel(image, p4) * ( a ) * ( b );
+    glm::vec3 res(0);
+    res += getPixel(image, p1) * (1 - a) * (1 - b);
+    res += getPixel(image, p2) * (a) * (1 - b);
+    res += getPixel(image, p3) * (1 - a) * (b);
+    res += getPixel(image, p4) * (a) * (b);
 
     return res;
 }
