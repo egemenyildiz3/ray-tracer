@@ -539,7 +539,7 @@ void BVH::debugDrawLevel(int level)
      std::vector<BVH::Node> nodes = debugLevelRecursive({ m_nodes[BVH::RootIndex] }, level, m_nodes);
     // print all aabbs
     for (const BVH::Node box : nodes) {
-        drawAABB(box.aabb, DrawMode::Wireframe, {1.0f,1.05f,1.05f}, 0.1f);
+        drawAABB(box.aabb, DrawMode::Filled, {1.0f,1.05f,1.05f}, 0.1f);
     }
 }
 
@@ -563,7 +563,7 @@ void BVH::debugDrawLeaf(int leafIndex)
         current = stack.back();
         stack.pop_back();
         if (current.isLeaf()) {
-            /*drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+           /* drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
             for (int i = 0; i < current.primitiveCount(); i++) {
                 BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
                 drawTriangle(prim.v0, prim.v1, prim.v2);
@@ -574,7 +574,7 @@ void BVH::debugDrawLeaf(int leafIndex)
         stack.push_back(m_nodes[current.rightChild()]);
         stack.push_back(m_nodes[current.leftChild()]);
     }
-    drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.55f), 0.1f);
+    drawAABB(current.aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.55f), 0.1f);
     // give the primitives a dif color
     for (int i = 0; i < current.primitiveCount(); i++) {
         BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];

@@ -5,6 +5,7 @@
 #include "shading.h"
 #include <framework/trackball.h>
 #include <texture.cpp>
+#include <iostream>
 
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
@@ -92,7 +93,7 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
     }
 }
 
-float areaAabb(AxisAlignedBox aabb) {
+float areaAabb(const AxisAlignedBox aabb) {
     float x = aabb.upper.x - aabb.lower.x;
     float y = aabb.upper.y - aabb.lower.y;
     float z = aabb.upper.z - aabb.lower.z;
@@ -124,7 +125,7 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
 
     // initiate variables
     int amountPrim = primitives.size();
-    int amountSplits = amountPrim / 4; // #bins = 1/4 of #primitives
+    int amountSplits = 9; // amountPrim / 4; // #bins = 1/4 of #primitives
     float sizePerBin = (aabb.upper[axis] - aabb.lower[axis]) / (amountSplits + 1);
     float minArea = std::numeric_limits<float>::max(); // a variable to check which area is the best
     float newArea;
@@ -136,10 +137,11 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
     AxisAlignedBox aabbUpper;
 
     std::sort(primitives.begin(), primitives.end(), Sorter(axis));
+    //std::binary(primitives.begin(), primitives.end(), Sorter(axis));
 
     // loop through all bins
     for (int i = 0; i < amountSplits; i++) {
-        distOnLine = (i + 1) * sizePerBin;
+        distOnLine = aabb.lower[axis] + (i + 1) * sizePerBin;
         
         // search for the end of the bin
         for (int j = lastJ; j < amountPrim; j++) {
@@ -147,25 +149,26 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
             // if the centroid is over the border, save the last primitive that was not over the border
             if (computePrimitiveCentroid(prim)[axis] > distOnLine) {
                 // save the index of the next primitive to test
-                lastJ = j;
-                if (lastJ == 0) {
-                    lastJ = 1;
+                lastJ = j-1;
+                if (lastJ == -1) {
+                    lastJ = 0;
                     break;
                 }
                 
                 // get the areas of the two bins that you made
-                aabbLower = computeSpanAABB(primitives.subspan(0, lastJ));
-                aabbUpper = computeSpanAABB(primitives.subspan(lastJ, amountPrim - lastJ));
+                aabbLower = computeSpanAABB(primitives.subspan(0, j));
+                aabbUpper = computeSpanAABB(primitives.subspan(j, amountPrim - j));
                 newArea = areaAabb(aabbLower) + areaAabb(aabbUpper);
 
                 // see if it is better than the last bins
                 if (newArea < minArea) {
                     minArea = newArea;
-                    MinIndex = lastJ;
+                    MinIndex = lastJ+1;
                 }
                 break;
             }
         }
     }
+    //std::cout << MinIndex << "\n";
     return MinIndex;
 }
