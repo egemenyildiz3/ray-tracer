@@ -108,30 +108,30 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     Ray newRay = ray;
     glm::vec3 newDir = ray.direction;
        do {
-            glm::vec3 shDir = glm::normalize(lightPosition - (myRay.origin + myRay.t * myRay.direction));
+            glm::vec3 shDir = glm::normalize(lightPosition - (newRay.origin + newRay.t * newRay.direction));
 
-            ray1.origin = myRay.origin + myRay.t * myRay.direction + shadowRayDirection * 0.001f; 
-            ray1.direction = shadowRayDirection;
-            pos = lightPosition - shadowRay.origin;
+            ray1.origin = newRay.origin + newRay.t * newRay.direction + shDir * 0.001f; 
+            ray1.direction = shDir;
+            pos = lightPosition - ray1.origin;
             
-            shadowRay.t = FLT_MAX;
-            check = state.bvh.intersect(state, shadowRay, shadowHit);
-            glm::vec3 updateK = sampleMaterialKd(state, shadowHit);
+            ray1.t = FLT_MAX;
+            check = state.bvh.intersect(state, ray1, newHit);
+            glm::vec3 updateK = sampleMaterialKd(state, newHit);
             
-            if (glm::length(pos)  <= shadowRay.t + 0.001f)
+            if (glm::length(pos) <= ray1.t + 0.001f)
             break;
 
             if (!check)
                 {}
             else {
-            x = x * ( updateK * (1.0f - newHit.material.transparency));
+            vec1 = vec1 * ( updateK * (1.0f - newHit.material.transparency));
             }
             newHit = hitInfo;
-            newRay = shadowRay;
+            newRay = ray1;
 
        }while (newRay.t + 0.001f <= glm::length(pos));
 
-    glm::vec3 ret = x * lightcolor;
+    glm::vec3 ret = vec1 * lightColor;
     return ret;
 }
 
