@@ -563,7 +563,7 @@ void BVH::debugDrawLeaf(int leafIndex)
         current = stack.back();
         stack.pop_back();
         if (current.isLeaf()) {
-            /*drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+           /* drawAABB(current.aabb, DrawMode::Wireframe, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
             for (int i = 0; i < current.primitiveCount(); i++) {
                 BVH::Primitive prim = m_primitives[current.primitiveOffset() + i];
                 drawTriangle(prim.v0, prim.v1, prim.v2);
