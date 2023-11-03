@@ -36,6 +36,7 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 
 }
 
+//a simple factorial function
 int fac(int n)
 {
     if (n == 1 || n == 0) {
@@ -44,10 +45,6 @@ int fac(int n)
     return n * fac(n - 1);
 }
 
-// TODO; Extra feature
-// Given a rendered image, compute and apply a bloom post-processing effect to increase bright areas.
-// This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
-// not go on a hunting expedition for your implementation, so please keep it here!
 void postprocessImageWithBloom(const Scene& scene, const Features& features, const Trackball& camera, Screen& image)
 {
     if (!features.extra.enableBloomEffect) {
@@ -56,6 +53,9 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 
     Screen bloomy(image.resolution(), true);
 
+    //iterate over pixels o image and check if RGB has a value greater than or equal to 0.8.
+    //If that is the case, bloomy is set to the same color. 
+    //This part is to select the "bright" parts.
     for (int a = 0; a < bloomy.resolution().x; a++) {
         for (int b = 0; b < bloomy.resolution().y; b++) {
             glm::vec3 pix = image.pixels()[image.indexAt(a, b)];
@@ -64,14 +64,16 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
             }
         }
     }
-    Screen blurry(bloomy.resolution(), true);
+
+    // calculate the "checks" for a Gaussian blur filter for blurring the bright areas.
     int limit = 10;
     std::vector<float> checks;
-
     for (int x = 0; x < limit; x++) {
         float combination = (float)fac(limit - 1) / ((float)fac(limit - x - 1) * (float)fac(x));
         checks.push_back(combination);
     }
+
+    //a quick normalization
     float add = 0.0f;
     for (const auto& x : checks) {
         add += x;
@@ -79,46 +81,60 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
     for (auto& x : checks) {
         x /= add;
     }
-
+    
+    //horizontal blurring
     Screen newPhoto(bloomy.resolution(), true);
 
     for (int m = 0; m < bloomy.resolution().y; m++) {
         for (int n = 0; n < bloomy.resolution().x; n++) {
             float r = 0.0f, g = 0.0f, b = 0.0f;
 
-            for (int l = 0; l < limit; l++) {
-                int q = m - (limit - 1) / 2 + l;
+            //to apply a weighted average
+            for (int w = 0; w < limit; w++) {
+                //calculating the index
+                int q = m - (limit - 1) / 2 + w;
+                // to ensure it is not out of bounds
                 if (q < bloomy.resolution().x && q >= 0) {
+                    // updating the RGB values from our calculations and the bloomy
                     glm::vec3 pixi = bloomy.pixels()[bloomy.indexAt(q, n)];
-                    r = r + pixi.r * checks[l];
-                    g = g + pixi.g * checks[l];
-                    b = b + pixi.b * checks[l];
+                    r = r + pixi.r * checks[w];
+                    g = g + pixi.g * checks[w];
+                    b = b + pixi.b * checks[w];
                 }
             }
             newPhoto.setPixel(m, n, glm::vec3(r, g, b));
         }
     }
 
+    Screen blurry(bloomy.resolution(), true);
+
+    //vertical blurring 
     for (int m = 0; m < bloomy.resolution().y; m++) {
         for (int n = 0; n < bloomy.resolution().x; n++) {
             float r = 0.0f, g = 0.0f, b = 0.0f;
 
-            for (int l = 0; l < limit; l++) {
-                int q = n - (limit - 1) / 2 + l;
+            //to apply a weighted average
+            for (int w = 0; w < limit; w++) {
+                // calculating the index
+                int q = n - (limit - 1) / 2 + w;
+                //to ensure it is not out of bounds
                 if (q >= 0 && q < bloomy.resolution().y) {
+                    //updating the RGB values from our calculations and the newPhoto
                     glm::vec3 pixi = newPhoto.pixels()[newPhoto.indexAt(m, q)];
-                    r = r + pixi.r * checks[l];
-                    g = g + pixi.g * checks[l];
-                    b = b + pixi.b * checks[l];
+                    r = r + pixi.r * checks[w];
+                    g = g + pixi.g * checks[w];
+                    b = b + pixi.b * checks[w];
                 }
             }
             blurry.setPixel(m, n, glm::vec3(r, g, b));
         }
     }
 
+    //mix the original with the final result in order to obtain the bloom effect
     for (int a = 0; a < image.resolution().y; a++) {
         for (int b = 0; b < image.resolution().x; b++) {
             glm::vec3 pixi = blurry.pixels()[blurry.indexAt(a, b)] + image.pixels()[image.indexAt(a, b)];
+            //ensure no RBG values over 1
             for (int m = 0; m < 3; m++) {
                 if (pixi[m] > 1) {
                     pixi[m] = 1;
