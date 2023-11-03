@@ -76,9 +76,9 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
         //creating a shadow ray to check for shadows
         //also adding an offset value
         Ray shadowRay;
-        shadowRay.origin = ray.origin + ray.t * ray.direction +
-            glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction)) * 0.0001f;
         shadowRay.direction = glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction));
+        shadowRay.origin = ray.origin + ray.t * ray.direction +
+            glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction)) * 0.001f;
         //setting an intersection test for the ray, and storing it in sh
         HitInfo sh;
         state.bvh.intersect(state, shadowRay, sh);
@@ -112,7 +112,6 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     if (visibilityOfLightSampleBinary(state, lightPosition, lightColor, ray, hitInfo)) {
         return lightColor;
     }
-    bool check = false;
     glm::vec3 newCol = lightColor;
     glm::vec3 pos = (ray.origin + ray.t * ray.direction) - lightPosition;
     glm::vec3 vec1 = { 1.0f, 1.0f, 1.0f };
@@ -122,33 +121,32 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
     HitInfo newHit = hitInfo;
     Ray newRay = ray;
     glm::vec3 newDir = ray.direction;
+    bool check;
     do {
         //calculate the direction
             glm::vec3 shDir = glm::normalize(lightPosition - (newRay.origin + newRay.t * newRay.direction));
 
+            ray1.t = FLT_MAX;
             ray1.origin = newRay.origin + newRay.t * newRay.direction + shDir * 0.001f; 
             ray1.direction = shDir;
             pos = lightPosition - ray1.origin;
             
-            ray1.t = FLT_MAX;
             //see if they intersect
             check = state.bvh.intersect(state, ray1, newHit);
             glm::vec3 updateK = sampleMaterialKd(state, newHit);
             
             //compare the lengths also add an offset value
-            if (glm::length(pos) <= ray1.t + 0.001f)
-            break;
-
-            if (!check)
-                {
+            if (glm::length(pos) - 0.001f <= ray1.t) {
+                break;
             }
-            else {
-            vec1 = vec1 * ( updateK * (1.0f - newHit.material.transparency));
+            if (check)
+            {
+                vec1 = vec1 * ( updateK * (1.0f - newHit.material.transparency));
             }
             newHit = hitInfo;
             newRay = ray1;
 
-    }while (newRay.t + 0.001f <= glm::length(pos));
+    }while (newRay.t <= glm::length(pos) - 0.001f);
 
     //return the light color calculated
     glm::vec3 ret = vec1 * lightColor;
@@ -217,7 +215,7 @@ glm::vec3 computeContributionSegmentLight(RenderState& state, const SegmentLight
         newLight.position = posLight;
         newLight.color = colLight;
         //add it to the total
-        total += computeContributionPointLight(state, newLight, ray, hitInfo);
+        total = total + computeContributionPointLight(state, newLight, ray, hitInfo);
     }
     return total;
 }
