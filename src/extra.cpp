@@ -31,7 +31,7 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 
     // ...
 
-        float offset = 5.0f;
+        float offset = 1.0f;
 
 #ifdef NDEBUG // Enable multi threading in Release mode
 #pragma omp parallel for schedule(guided)
@@ -50,13 +50,13 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
             std::vector<glm::vec3> color;
             // do 20 random offsets from the base of the ray, move them on the edge of a circle
             for (int i = 0; i < 20; i++) {
-                auto rand = state.sampler.next_1d() * glm::two_pi<float>(); // random place on a unit circle
-                auto rays = generatePixelRays(state, camera, { x, y }, screen.resolution()); // this generates rays from the camera to the xy?
+                auto rand = state.sampler.next_2d() * 10.0f; // random place on a unit circle
+                auto rays = generatePixelRays(state, camera, { x - rand[0], y - rand[1] }, screen.resolution()); // this generates rays from the camera to the xy?
                 for (auto i : rays) { // it could be that it made more rays, jittering samples
-                    i.origin.x += glm::sin(rand) * offset; // ofset the origin on a circle and scale
-                    i.origin.y += glm::cos(rand) * offset;
+                    i.origin.x += rand[0] * offset; // ofset the origin on a circle and scale
+                    i.origin.y += rand[1] * offset;
+                    color.push_back(renderRays(state, rays)); // add the new colors to a array
                 }
-                color.push_back(renderRays(state, rays)); // add the new colors to a array
             }
 
             auto L = avg(color); // avg that array
