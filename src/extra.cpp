@@ -263,15 +263,11 @@ glm::vec3 sampleEnvironmentMap(RenderState& state, const Ray ray)
                 i = 5;
         }
 
-        //try {
         const std::vector<Image>& sides = state.scene.envMap;
         coords = (1.0f + coords) / 2.0f;
         coords[1] = 1 - coords[1];
-        if (coords.x > 0 && coords.y > 0 && coords.x < 1 && coords.y < 1)
+        if (sides.size() == 6 && coords.x > 0 && coords.y > 0 && coords.x < 1 && coords.y < 1)
             return sampleTextureNearest(sides[i], coords);
-        //} catch (...) {
-        //    std::cout << coords[0] << ", " << coords[1] << '\n';
-        //}
         return { 0, 0, 0 };
     } else {
         return glm::vec3(0.f);

@@ -75,19 +75,6 @@ int main(int argc, char** argv)
         Scene scene = loadScenePrebuilt(sceneType, config.dataPath);
         BVH bvh(scene, config.features);
 
-
-        try {
-            // Set the enviroment cubemap
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nx.png")));
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/ny.png")));
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nz.png")));
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/px.png")));
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/py.png")));
-            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/pz.png")));
-        } catch (...) {
-            std::cout << "There was a problem with retrieving the files\n";
-        }
-
         int bvhDebugLevel = 0;
         int bvhDebugLeaf = 0;
         bool debugBVHLevel { false };
@@ -225,6 +212,19 @@ int main(int argc, char** argv)
                     ImGui::Unindent();
                 }
                 ImGui::Checkbox("Environment maps", &config.features.extra.enableEnvironmentMap);
+                if (config.features.extra.enableEnvironmentMap) {
+                    // Set the enviroment cubemap
+                    if (scene.envMap.size() != 6) {
+                        try {
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nx.png")));
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/ny.png")));
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nz.png")));
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/px.png")));
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/py.png")));
+                            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/pz.png")));
+                        } catch (...) {std::cout << "There was a problem with retrieving the files\n";}
+                    }
+                }
                 ImGui::Checkbox("Texture filtering (mipmap)", &config.features.extra.enableMipmapTextureFiltering);
             }
 
