@@ -27,7 +27,9 @@ void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec
     // TODO: implement this function.
     position = glm::vec3(0.0);
     color = glm::vec3(0.0);
+    //calculating the position of the light
     position = light.endpoint0 + sample * (light.endpoint1 - light.endpoint0);
+    // calculating the position of the color
     color = light.color0 + sample * (light.color1 - light.color0);
 }
 
@@ -45,6 +47,7 @@ void sampleParallelogramLight(const glm::vec2& sample, const ParallelogramLight&
     position = light.v0 + sample.x * light.edge01 + sample.y * light.edge02;
     const float a = 1.0f - sample.x;
     const float b = 1.0f - sample.y;
+    //calculating position with linearl interpolation among the vertices of the parallelogram
     color = a * b * light.color0 + a * sample.y * light.color2 + sample.x * sample.y * light.color3 + sample.x * b * light.color1;
 }
 
@@ -64,13 +67,18 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
     if (!state.features.enableShadows) {
         return true;
     } else {
+        //creating a shadow ray to check for shadows
+        //also adding an offset value
         Ray shadowRay;
-        shadowRay.origin = ray.origin + ray.t * ray.direction + glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction)) * 0.0001f;
+        shadowRay.origin = ray.origin + ray.t * ray.direction +
+            glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction)) * 0.0001f;
         shadowRay.direction = glm::normalize(lightPosition - (ray.origin + ray.t * ray.direction));
+        //setting an intersection test for the ray, and storing it in sh
         HitInfo sh;
         state.bvh.intersect(state, shadowRay, sh);
-        float a = glm::distance(shadowRay.origin, lightPosition);
-        if (shadowRay.t < a) {
+        //check if the intersection is less than the distance calculated and return accordingly
+        float dis = glm::distance(shadowRay.origin, lightPosition);
+        if (shadowRay.t < dis) {
             return false;
         } else {    
             return true;
@@ -96,18 +104,20 @@ bool visibilityOfLightSampleBinary(RenderState& state, const glm::vec3& lightPos
 glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec3& lightPosition, const glm::vec3& lightColor, const Ray& ray, const HitInfo& hitInfo)
 {
     if (visibilityOfLightSampleBinary(state, lightPosition, lightColor, ray, hitInfo)) {
-            return lightColor;
+        return lightColor;
     }
     bool check = false;
     glm::vec3 newCol = lightColor;
     glm::vec3 pos = (ray.origin + ray.t * ray.direction) - lightPosition;
     glm::vec3 vec1 = { 1.0f, 1.0f, 1.0f };
 
+    //create a sample ray
     Ray ray1;
     HitInfo newHit = hitInfo;
     Ray newRay = ray;
     glm::vec3 newDir = ray.direction;
-       do {
+    do {
+        //calculate the direction
             glm::vec3 shDir = glm::normalize(lightPosition - (newRay.origin + newRay.t * newRay.direction));
 
             ray1.origin = newRay.origin + newRay.t * newRay.direction + shDir * 0.001f; 
@@ -115,22 +125,26 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
             pos = lightPosition - ray1.origin;
             
             ray1.t = FLT_MAX;
+            //see if they intersect
             check = state.bvh.intersect(state, ray1, newHit);
             glm::vec3 updateK = sampleMaterialKd(state, newHit);
             
+            //compare the lengths also add an offset value
             if (glm::length(pos) <= ray1.t + 0.001f)
             break;
 
             if (!check)
-                {}
+                {
+            }
             else {
             vec1 = vec1 * ( updateK * (1.0f - newHit.material.transparency));
             }
             newHit = hitInfo;
             newRay = ray1;
 
-       }while (newRay.t + 0.001f <= glm::length(pos));
+    }while (newRay.t + 0.001f <= glm::length(pos));
 
+    //return the light color calculated
     glm::vec3 ret = vec1 * lightColor;
     return ret;
 }
@@ -151,13 +165,17 @@ glm::vec3 visibilityOfLightSampleTransparency(RenderState& state, const glm::vec
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computeContributionPointLight(RenderState& state, const PointLight& light, const Ray& ray, const HitInfo& hitInfo)
 {
-    if (visibilityOfLightSample(state, light.position, light.color, ray, hitInfo) != glm::vec3 { 0, 0, 0 }) {
+    glm::vec3 zeroVec = { 0, 0, 0};
+    //check if the point light is visible from the point of intersection
+    if (visibilityOfLightSample(state, light.position, light.color, ray, hitInfo) != zeroVec) {
         glm::vec3 p = ray.origin + ray.t * ray.direction;
         glm::vec3 l = glm::normalize(light.position - p);
         glm::vec3 v = -ray.direction;
-        return visibilityOfLightSample(state, light.position, light.color, ray, hitInfo) * computeShading(state, v, l, light.color, hitInfo);
+        //shading contribution times the shadow effect on the ray
+        return visibilityOfLightSample(state, light.position, light.color, ray, hitInfo)
+            * computeShading(state, v, l, light.color, hitInfo);
     }
-    return glm::vec3 { 0, 0, 0 };
+    return zeroVec;
 }
 
 // TODO: Standard feature
@@ -179,19 +197,22 @@ glm::vec3 computeContributionPointLight(RenderState& state, const PointLight& li
 // This method is unit-tested, so do not change the function signature.
 glm::vec3 computeContributionSegmentLight(RenderState& state, const SegmentLight& light, const Ray& ray, const HitInfo& hitInfo, uint32_t numSamples)
 {
+    //add the contributions
     glm::vec3 total(0.0f);
 
     for (uint32_t i = 0; i < numSamples; ++i) {
         float sample = state.sampler.next_1d();
         glm::vec3 posLight;
         glm::vec3 colLight;
+        //create a sample segment light
         sampleSegmentLight(sample, light, posLight, colLight);
+        //calculate the contribution of the light
         PointLight newLight;
         newLight.position = posLight;
         newLight.color = colLight;
+        //add it to the total
         total += computeContributionPointLight(state, newLight, ray, hitInfo);
     }
-
     return total;
 }
 
