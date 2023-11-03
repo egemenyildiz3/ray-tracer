@@ -93,15 +93,12 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
 Ray generatePassthroughRay(Ray ray, HitInfo hitInfo)
 {
     // Create the passthrough ray starting from the intersection point
-    //Ray ray1;
-    //ray1.origin = ray.origin + ray.direction * (ray.t + 0.001f); 
-    //ray1.direction = glm::normalize(ray.direction);
-    //return ray1;
-
     Ray ray1;
     glm::vec3 newDir = ray.direction;
-    glm::vec3 intersection = ray.origin + ray.t * ray.direction - 4 * FLT_EPSILON * hitInfo.normal;
-    ray1.origin = intersection;
+    //to avoid self-intersection.
+    glm::vec3 newOr = ray.origin + ray.t * ray.direction - 4 * FLT_EPSILON * hitInfo.normal;
+    //create a new ray in the same direction as the initial ray but begings at the point of intersection.
+    ray1.origin = newOr;
     ray1.direction = newDir;
     return ray1;
 }
@@ -137,12 +134,9 @@ void renderRaySpecularComponent(RenderState& state, Ray ray, const HitInfo& hitI
 void renderRayTransparentComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
     // TODO: you should first implement generatePassthroughRay()
-    //Ray r = generatePassthroughRay(ray, hitInfo);
-    //glm::vec3 miss = renderRay(state, r, rayDepth + 1);
-    //const float exp = hitInfo.material.transparency;
-    //hitColor = hitColor * (1.0f - exp) + miss * exp;
-
     Ray r = generatePassthroughRay(ray, hitInfo);
-    float exp = hitInfo.material.transparency;
-    hitColor = (1 - exp) * renderRay(state, r, rayDepth + 1) + exp * hitColor;
+    //the transparency value
+    float trVal = hitInfo.material.transparency;
+    //editing hitColor by using alpha blending.
+    hitColor = (1 - trVal) * renderRay(state, r, rayDepth + 1) + trVal * hitColor;
 }
