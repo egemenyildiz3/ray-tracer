@@ -32,6 +32,7 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
     // ...
 
         float offset = 1.0f;
+    int amountSamples = 20;
 
 #ifdef NDEBUG // Enable multi threading in Release mode
 #pragma omp parallel for schedule(guided)
@@ -49,14 +50,19 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 
             std::vector<glm::vec3> color;
             // do 20 random offsets from the base of the ray, move them on the edge of a circle
-            for (int i = 0; i < 20; i++) {
-                auto rand = state.sampler.next_2d() * 10.0f; // random place on a unit circle
-                auto rays = generatePixelRays(state, camera, { x - rand[0], y - rand[1] }, screen.resolution()); // this generates rays from the camera to the xy?
-                for (auto i : rays) { // it could be that it made more rays, jittering samples
-                    i.origin.x += rand[0] * offset; // ofset the origin on a circle and scale
-                    i.origin.y += rand[1] * offset;
-                    color.push_back(renderRays(state, rays)); // add the new colors to a array
+            for (int i = 0; i < amountSamples; i++) {
+                glm::vec3 rand = { state.sampler.next_2d() * 2.0f - 1.0f, 0 };
+                //std::cout << rand[0] << rand[1] << "\n";
+                auto rays = generatePixelRays(state, camera, { x , y }, screen.resolution()); // this generates rays from the camera to the xy?
+                for (int j = 0; j < rays.size(); j++) { // it could be that it made more rays, jittering samples
+                    auto i = rays[j];
+                    i.origin.x -= rand[0] * offset; // ofset the origin on a circle and scale
+                    i.origin.y -= rand[1] * offset;
+                    i.direction.operator+=(rand/10.0f);
+                    //std::cout << i.direction.x << i.direction.y << i.direction.z << "\n";
+                    rays[j] = i;
                 }
+                color.push_back(renderRays(state, rays)); // add the new colors to a array
             }
 
             auto L = avg(color); // avg that array
