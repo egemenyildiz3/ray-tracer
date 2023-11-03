@@ -73,9 +73,10 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
     // ...
 
     float numSamples = state.features.extra.numGlossySamples;
-    float n = hitInfo.material.shininess / 64; // The reason I do it squared is so that the glossiness changes less in the beginning
+    float n = hitInfo.material.shininess / 64;
 
     Ray r = generateReflectionRay(ray, hitInfo);
+    drawRay(r, { 0, 1, 0 });
 
     glm::vec3 w = glm::normalize(r.direction);
     glm::vec3 t = { 1, 0, 0 };
@@ -90,14 +91,16 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
         float radius = glm::sqrt(xi[0]) * n;
         float phi = glm::two_pi<float>() * xi[1];
 
-        float a = (-radius / 2) + xi[0] * radius; 
-        float b = (-radius / 2) + xi[1] * radius; 
+        float a = glm::sin(phi) * cos(radius); 
+        float b = glm::sin(phi) * glm::sin(radius); 
 
-        glm::vec3 randomDirection = a * u + b * v;
+        Ray rDash = r;
+        rDash.direction = r.direction + a * u + b * v;
 
-        r.direction += randomDirection;
+        if (glm::dot(hitInfo.normal, rDash.direction) < 0)
+            continue;
 
-        hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1);
+        hitColor += hitInfo.material.ks * renderRay(state, rDash, rayDepth + 1) / numSamples;
     }
 }
 
