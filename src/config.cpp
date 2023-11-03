@@ -286,6 +286,9 @@ Config readConfigFile(const std::filesystem::path& config_path)
     config.features.numShadowSamples = table["features"]["num_shadow_samples"]
                                            .as_integer()
                                            ->value_or(16);
+    config.features.extra.offsetFocal = table["features"]["extra"]["offsetFocal"]
+                                         .as_floating_point()
+                                         ->value_or(1.0f);
     if (table["features"]["enable_bilinear_texture_filtering"]) {
         config.features.enableBilinearTextureFiltering = table["features"]["enable_bilinear_texture_filtering"]
                                                              .as_boolean()

@@ -31,7 +31,7 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 
     // ...
 
-    float offset = 3.0f;
+    float offset = features.extra.offsetFocal;
     int amountSamples = 20;
     float lensRadius = 1.0f;
 
