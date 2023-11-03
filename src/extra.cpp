@@ -4,6 +4,8 @@
 #include "recursive.h"
 #include "shading.h"
 #include <framework/trackball.h>
+#include <draw.h>
+#include <iostream>
 #include <texture.cpp>
 #include <iostream>
 
@@ -15,6 +17,11 @@ glm::vec3 avg(std::vector<glm::vec3> input)
         output += (1.0f / input.size()) * i;
     }
     return output;
+}
+
+void printVector(glm::vec3 input, std::string pre = "")
+{
+    std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
 }
 
 // TODO; Extra feature
@@ -63,7 +70,7 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
                 }
                 color.push_back(renderRays(state, rays)); // add the new colors to a array
             }
-
+            
             auto L = avg(color); // avg that array
             screen.setPixel(x, y, L);
         }
@@ -207,8 +214,37 @@ void postprocessImageWithBloom(const Scene& scene, const Features& features, con
 void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInfo, glm::vec3& hitColor, int rayDepth)
 {
     // Generate an initial specular ray, and base secondary glossies on this ray
-    // auto numSamples = state.features.extra.numGlossySamples;
     // ...
+
+    float numSamples = state.features.extra.numGlossySamples;
+    float n = hitInfo.material.shininess / 64;
+
+    Ray r = generateReflectionRay(ray, hitInfo);
+    drawRay(r, { 0, 1, 0 });
+
+    glm::vec3 w = glm::normalize(r.direction);
+    glm::vec3 t = { 1, 0, 0 };
+    if (r.direction.y == r.direction.z == 0)
+        t = { 0, 1, 0 };
+    glm::vec3 v = glm::normalize(glm::cross(r.direction, t));
+    glm::vec3 u = glm::cross(w, v);
+
+    // We use the method from the book in 14.4.1 to get a random vector direction uniformly distributed over a hemisphere.
+    for (int i = 0; i < numSamples; i++) {
+        glm::vec2 xi = state.sampler.next_2d();
+        float radius = glm::sqrt(xi[0]) * n;
+        float phi = glm::two_pi<float>() * xi[1];
+
+        float a = glm::sin(phi) * radius; 
+        float b = glm::cos(phi) * radius; 
+
+        r.direction = w + a * u + b * v;
+
+        if (glm::dot(hitInfo.normal, r.direction) < 0)
+            continue;
+
+        hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1) / numSamples;
+    }
 }
 
 int sign(float v) {

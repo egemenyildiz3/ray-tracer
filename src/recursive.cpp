@@ -75,7 +75,7 @@ Ray generateReflectionRay(Ray ray, HitInfo hitInfo)
     //       if you use glm::reflect, you will not get points for this method!
 
     Ray res;
-    float ofset = 0.01;
+    float ofset = 0.001;
 
     res.origin = ray.origin + (ray.t - ofset) * ray.direction;
     res.direction = glm::normalize(ray.direction - 2.0f * (glm::dot(ray.direction, hitInfo.normal)) * hitInfo.normal);
