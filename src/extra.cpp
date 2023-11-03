@@ -7,6 +7,16 @@
 #include <texture.cpp>
 #include <iostream>
 
+
+glm::vec3 avg(std::vector<glm::vec3> input)
+{
+    glm::vec3 output {};
+    for (glm::vec3 i : input) {
+        output += (1.0f / input.size()) * i;
+    }
+    return output;
+}
+
 // TODO; Extra feature
 // Given the same input as for `renderImage()`, instead render an image with your own implementation
 // of Depth of Field. Here, you generate camera rays s.t. a focus point and a thin lens camera model
@@ -20,6 +30,44 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
     }
 
     // ...
+
+    float offset = features.extra.offsetFocal;
+    int amountSamples = 20;
+    float lensRadius = 1.0f;
+
+#ifdef NDEBUG // Enable multi threading in Release mode
+#pragma omp parallel for schedule(guided)
+#endif
+    for (int y = 0; y < screen.resolution().y; y++) {
+        for (int x = 0; x != screen.resolution().x; x++) {
+            // Assemble useful objects on a per-pixel basis; e.g. a per-thread sampler
+            // Note; we seed the sampler for consistenct behavior across frames
+            RenderState state = {
+                .scene = scene,
+                .features = features,
+                .bvh = bvh,
+                .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) }
+            };
+
+            std::vector<glm::vec3> color;
+            // do amountSamples random offsets from the base of the ray, move them on the edge of a circle
+            for (int i = 0; i < amountSamples; i++) {
+                glm::vec3 rand = { state.sampler.next_2d() * lensRadius * 2.0f - 1.0f, 0 }; // make a random variable that goes from -lenssize to + lenssize
+                auto rays = generatePixelRays(state, camera, { x , y }, screen.resolution()); // this generates rays from the camera to the xy?
+                for (int j = 0; j < rays.size(); j++) { // it could be that it made more rays, jittering samples
+                    auto i = rays[j];
+                    i.origin.x -= rand[0]; // ofset the origin on a circle and scale
+                    i.origin.y -= rand[1];
+                    i.direction.operator+=(rand/offset);
+                    rays[j] = i;
+                }
+                color.push_back(renderRays(state, rays)); // add the new colors to a array
+            }
+
+            auto L = avg(color); // avg that array
+            screen.setPixel(x, y, L);
+        }
+    }
 }
 
 // TODO; Extra feature

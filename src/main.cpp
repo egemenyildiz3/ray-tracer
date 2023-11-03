@@ -192,6 +192,8 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
                     ImGui::Indent();
+                        float minLenght = 1.0f, maxLenght = 32.0f;
+                        ImGui::SliderScalar("offset", ImGuiDataType_Float, &config.features.extra.offsetFocal, &minLenght, &maxLenght);
                     // Add DOF settings here, if necessary
                     ImGui::Unindent();
                 }
