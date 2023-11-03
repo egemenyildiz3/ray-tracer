@@ -70,7 +70,7 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
                 }
                 color.push_back(renderRays(state, rays)); // add the new colors to a array
             }
-
+            
             auto L = avg(color); // avg that array
             screen.setPixel(x, y, L);
         }
@@ -238,13 +238,12 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
         float a = glm::sin(phi) * radius; 
         float b = glm::cos(phi) * radius; 
 
-        Ray rDash = r;
-        rDash.direction = r.direction + a * u + b * v;
+        r.direction = w + a * u + b * v;
 
-        if (glm::dot(hitInfo.normal, rDash.direction) < 0)
+        if (glm::dot(hitInfo.normal, r.direction) < 0)
             continue;
 
-        hitColor += hitInfo.material.ks * renderRay(state, rDash, rayDepth + 1) / numSamples;
+        hitColor += hitInfo.material.ks * renderRay(state, r, rayDepth + 1) / numSamples;
     }
 }
 
