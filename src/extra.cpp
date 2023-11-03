@@ -235,8 +235,8 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
         float radius = glm::sqrt(xi[0]) * n;
         float phi = glm::two_pi<float>() * xi[1];
 
-        float a = glm::sin(phi) * cos(radius); 
-        float b = glm::sin(phi) * glm::sin(radius); 
+        float a = glm::sin(phi) * radius; 
+        float b = glm::cos(phi) * radius; 
 
         Ray rDash = r;
         rDash.direction = r.direction + a * u + b * v;
