@@ -44,11 +44,17 @@ void sampleSegmentLight(const float& sample, const SegmentLight& light, glm::vec
 // This method is unit-tested, so do not change the function signature.
 void sampleParallelogramLight(const glm::vec2& sample, const ParallelogramLight& light, glm::vec3& position, glm::vec3& color)
 {
+    glm::vec3 u1 = light.color0 + (light.color1 - light.color0) * sample.x;
+    glm::vec3 u2 = light.color2 + (light.color3 - light.color2) * sample.x;
+    glm::vec3 v1 = light.color0 + (light.color2 - light.color0) * sample.y;
+    glm::vec3 v2 = light.color1 + (light.color3 - light.color1) * sample.x;
+    //linear interpolation
+    glm::vec3 u = sample.y * (u2 - u1) + u1;
+    glm::vec3 v = sample.x * (v2 - v1) + v1;
+    glm::vec3 colTemp = u + v;
+    glm::vec3 col = colTemp / 2.0f;
+    color = col;
     position = light.v0 + sample.x * light.edge01 + sample.y * light.edge02;
-    const float a = 1.0f - sample.x;
-    const float b = 1.0f - sample.y;
-    //calculating position with linearl interpolation among the vertices of the parallelogram
-    color = a * b * light.color0 + a * sample.y * light.color2 + sample.x * sample.y * light.color3 + sample.x * b * light.color1;
 }
 
 // TODO: Standard feature
