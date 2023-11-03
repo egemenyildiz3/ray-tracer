@@ -36,7 +36,7 @@ struct Scene {
 
     // You can add your own objects (e.g. environment maps) here
     // ...
-    Image envMap = Image(std::filesystem::path("../../../data/earth.png"));
+    std::vector<Image> envMap;
 };  
 
 // Load a prebuilt scene.

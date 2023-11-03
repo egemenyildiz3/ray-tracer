@@ -6,6 +6,7 @@
 #include "shading.h"
 #include <limits>
 #include "interpolate.h"
+#include "extra.h"
 
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
@@ -27,11 +28,15 @@ void printVector(glm::vec3 input, std::string pre = ""){
     std::cout << pre << "[ " << input[0] << ", " << input[1] << ", " << input[2] << " ]\n";
 }
 
+bool floatEqual(float a, float b, float epsilon = 0.001)
+{
+    return (a - b < epsilon);
+};
+
 // Add your tests here, if you want :D
 TEST_CASE("StudentTest")
 {
     // Add your own tests here...
-
     SECTION("Bayocentric coordinates")
     {
         glm::vec3 a { .5, .5, 0 };
@@ -49,9 +54,7 @@ TEST_CASE("StudentTest")
         printVector(check, "Actual");
         printVector(p, "Expected");
 
-        bool answer = check.x == p.x && check.y == p.y && check.z == p.z;
-        CHECK(answer == true);
-
+        CHECK((floatEqual(check.x, p.x) && floatEqual(check.y, p.y) && floatEqual(check.z, p.z)));
     }
     
     SECTION("computePrimitiveAABB")
@@ -158,12 +161,13 @@ TEST_CASE("StudentTest")
         CHECK(secondHalve == true);
     }
 
-    SECTION("buildLeafData")
+    SECTION("splitPrimitivesBySAHBin_sorted")
     {
         AxisAlignedBox box {
             .lower = { 0, 0, 0 },
             .upper = { 10, 10, 10 }
         };
+        int axis = 0;
         BVHInterface::Primitive triangle0 = {
             .v0 = { { 0.0f, 0.0f, 0.0f } },
             .v1 = { { 0.5f, 0.0f, 0.0f } },
@@ -171,21 +175,68 @@ TEST_CASE("StudentTest")
         };
         BVHInterface::Primitive triangle1 = {
             .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
             .v1 = { { 5.0f, 0.0f, 0.0f } },
             .v2 = { { 0.0f, 1.0f, 0.0f } }
         };
-        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1 };
-        Features features = {
-            .enableShading = true,
-            .enableAccelStructure = true,
-            .shadingModel = ShadingModel::Lambertian
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 10.0f, 7.0f, 0.0f } },
+            .v1 = { { 7.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
         };
-        Scene scene = loadScenePrebuilt(SceneType::CornellBox, DATA_DIR);
-        BVH bvh(scene, features);
+        std::vector<BVHInterface::Primitive> triangles { triangle0, triangle1, triangle2, triangle3, triangle4 };
 
-        //BVH::Node node = BVH::buildLeafData(scene, features, box, triangles);
+        size_t split = splitPrimitivesBySAHBin(box, axis, triangles);
+        CHECK(split == 4);
     }
 
+        SECTION("splitPrimitivesBySAHBin_unsorted")
+    {
+        AxisAlignedBox box {
+            .lower = { 0, 0, 0 },
+            .upper = { 10, 10, 10 }
+        };
+        int axis = 0;
+        BVHInterface::Primitive triangle0 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 0.5f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle1 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 1.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 0.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle2 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 2.0f, 0.0f, 5.0f } },
+            .v2 = { { 0.0f, 1.0f, 10.0f } }
+        };
+        BVHInterface::Primitive triangle3 = {
+            .v0 = { { 0.0f, 0.0f, 0.0f } },
+            .v1 = { { 5.0f, 0.0f, 0.0f } },
+            .v2 = { { 0.0f, 1.0f, 0.0f } }
+        };
+        BVHInterface::Primitive triangle4 = {
+            .v0 = { { 10.0f, 7.0f, 0.0f } },
+            .v1 = { { 7.0f, 0.0f, 0.0f } },
+            .v2 = { { 8.0f, 1.0f, 0.0f } }
+        };
+        //unsorted
+        std::vector<BVHInterface::Primitive> triangles { triangle3, triangle1, triangle4, triangle0, triangle2 };
+
+        size_t split = splitPrimitivesBySAHBin(box, axis, triangles);
+        CHECK(split == 4);
+    }
 }
 
 // The below tests are not "good" unit tests. They don't actually test correctness.
