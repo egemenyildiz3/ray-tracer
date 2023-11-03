@@ -32,7 +32,8 @@ DISABLE_WARNINGS_POP()
 #include <thread>
 #include <variant>
 
-std::vector<float> durations;
+float avg = 0;
+int measurments = 0;
 
 // This is the main application. The code in here does not need to be modified.
 enum class ViewMode {
@@ -73,6 +74,19 @@ int main(int argc, char** argv)
 
         Scene scene = loadScenePrebuilt(sceneType, config.dataPath);
         BVH bvh(scene, config.features);
+
+
+        try {
+            // Set the enviroment cubemap
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nx.png")));
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/ny.png")));
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/nz.png")));
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/px.png")));
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/py.png")));
+            scene.envMap.push_back(Image(std::filesystem::path("../../../data/Cubemap/pz.png")));
+        } catch (...) {
+            std::cout << "There was a problem with retrieving the files\n";
+        }
 
         int bvhDebugLevel = 0;
         int bvhDebugLeaf = 0;
@@ -423,14 +437,11 @@ int main(int argc, char** argv)
                 const auto end = clock::now();
                 const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-                durations.push_back(duration);
-                float avg = 0;
-                for (float f : durations) {
-                    avg += f;
-                }
-                avg /= durations.size();
+                avg *= measurments++;
+                avg += duration;
+                avg /= measurments;
 
-                fmt::print("Rendering took {} ms; average time: {} out of {} measurements:.\n", duration, avg, durations.size());
+                fmt::print("Rendering took {} ms; average time: {} ms ({} measurements).\n", duration, avg, measurments);
                 screen.setPixel(0, 0, glm::vec3(1.0f));
                 screen.draw(); // Takes the image generated using ray tracing and outputs it to the screen using OpenGL.
             } break;

@@ -211,6 +211,14 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
     // ...
 }
 
+int sign(float v) {
+    if (v < 0)
+        return -1;
+    if (v == 0)
+        return 0;
+    return 1;
+}
+
 // TODO; Extra feature
 // Given a camera ray (or reflected camera ray) that does not intersect the scene, evaluates the contribution
 // along the ray, originating from an environment map. You will have to add support for environment textures
@@ -219,16 +227,52 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // - ray;   ray object
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
-glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
+glm::vec3 sampleEnvironmentMap(RenderState& state, const Ray ray)
 {
     if (state.features.extra.enableEnvironmentMap) {
         // Part of your implementation should go here
-        Image map = state.scene.envMap;
-        
-        glm::vec3 dir = glm::normalize(ray.direction);
-        glm::vec2 coords { std::fmod(1.0f, dir [0]), std::fmod(1.0f, dir[1]) };
+        float x = ray.direction.x;
+        float y = ray.direction.y;
+        float z = ray.direction.z;
+        float absX = glm::abs(x);
+        float absY = glm::abs(y);
+        float absZ = glm::abs(z);
 
-        return sampleTextureNearest(map, coords);
+        glm::vec2 coords;
+
+        int i = 0;
+        if (absX >= glm::max(absY, absZ)) {
+            coords = glm::vec2 { -sign(x) * z, -y } / absX;
+            if (x < 0)
+                i = 0;
+            else
+                i = 3;
+        }
+        if (absY >= glm::max(absX, absZ)) {
+            coords = glm::vec2 { x, sign(y) * z } / absY;
+            if (y < 0)
+                i = 1;
+            else
+                i = 4;
+        }
+        if (absZ >= glm::max(absX, absY)) {
+            coords = glm::vec2 { sign(z) * x, -y } / absZ;
+            if (z < 0)
+                i = 2;
+            else
+                i = 5;
+        }
+
+        //try {
+        const std::vector<Image>& sides = state.scene.envMap;
+        coords = (1.0f + coords) / 2.0f;
+        coords[1] = 1 - coords[1];
+        if (coords.x > 0 && coords.y > 0 && coords.x < 1 && coords.y < 1)
+            return sampleTextureNearest(sides[i], coords);
+        //} catch (...) {
+        //    std::cout << coords[0] << ", " << coords[1] << '\n';
+        //}
+        return { 0, 0, 0 };
     } else {
         return glm::vec3(0.f);
     }
