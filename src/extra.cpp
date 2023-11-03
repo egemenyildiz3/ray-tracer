@@ -31,8 +31,9 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
 
     // ...
 
-        float offset = 1.0f;
+    float offset = 3.0f;
     int amountSamples = 20;
+    float lensRadius = 1.0f;
 
 #ifdef NDEBUG // Enable multi threading in Release mode
 #pragma omp parallel for schedule(guided)
@@ -49,17 +50,15 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
             };
 
             std::vector<glm::vec3> color;
-            // do 20 random offsets from the base of the ray, move them on the edge of a circle
+            // do amountSamples random offsets from the base of the ray, move them on the edge of a circle
             for (int i = 0; i < amountSamples; i++) {
-                glm::vec3 rand = { state.sampler.next_2d() * 2.0f - 1.0f, 0 };
-                //std::cout << rand[0] << rand[1] << "\n";
+                glm::vec3 rand = { state.sampler.next_2d() * lensRadius * 2.0f - 1.0f, 0 }; // make a random variable that goes from -lenssize to + lenssize
                 auto rays = generatePixelRays(state, camera, { x , y }, screen.resolution()); // this generates rays from the camera to the xy?
                 for (int j = 0; j < rays.size(); j++) { // it could be that it made more rays, jittering samples
                     auto i = rays[j];
-                    i.origin.x -= rand[0] * offset; // ofset the origin on a circle and scale
-                    i.origin.y -= rand[1] * offset;
-                    i.direction.operator+=(rand/10.0f);
-                    //std::cout << i.direction.x << i.direction.y << i.direction.z << "\n";
+                    i.origin.x -= rand[0]; // ofset the origin on a circle and scale
+                    i.origin.y -= rand[1];
+                    i.direction.operator+=(rand/offset);
                     rays[j] = i;
                 }
                 color.push_back(renderRays(state, rays)); // add the new colors to a array
