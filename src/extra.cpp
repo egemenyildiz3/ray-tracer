@@ -7,6 +7,17 @@
 #include <draw.h>
 #include <iostream>
 #include <texture.cpp>
+#include <iostream>
+
+
+glm::vec3 avg(std::vector<glm::vec3> input)
+{
+    glm::vec3 output {};
+    for (glm::vec3 i : input) {
+        output += (1.0f / input.size()) * i;
+    }
+    return output;
+}
 
 void printVector(glm::vec3 input, std::string pre = "")
 {
@@ -26,6 +37,44 @@ void renderImageWithDepthOfField(const Scene& scene, const BVHInterface& bvh, co
     }
 
     // ...
+
+    float offset = features.extra.offsetFocal;
+    int amountSamples = 20;
+    float lensRadius = 1.0f;
+
+#ifdef NDEBUG // Enable multi threading in Release mode
+#pragma omp parallel for schedule(guided)
+#endif
+    for (int y = 0; y < screen.resolution().y; y++) {
+        for (int x = 0; x != screen.resolution().x; x++) {
+            // Assemble useful objects on a per-pixel basis; e.g. a per-thread sampler
+            // Note; we seed the sampler for consistenct behavior across frames
+            RenderState state = {
+                .scene = scene,
+                .features = features,
+                .bvh = bvh,
+                .sampler = { static_cast<uint32_t>(screen.resolution().y * x + y) }
+            };
+
+            std::vector<glm::vec3> color;
+            // do amountSamples random offsets from the base of the ray, move them on the edge of a circle
+            for (int i = 0; i < amountSamples; i++) {
+                glm::vec3 rand = { state.sampler.next_2d() * lensRadius * 2.0f - 1.0f, 0 }; // make a random variable that goes from -lenssize to + lenssize
+                auto rays = generatePixelRays(state, camera, { x , y }, screen.resolution()); // this generates rays from the camera to the xy?
+                for (int j = 0; j < rays.size(); j++) { // it could be that it made more rays, jittering samples
+                    auto i = rays[j];
+                    i.origin.x -= rand[0]; // ofset the origin on a circle and scale
+                    i.origin.y -= rand[1];
+                    i.direction.operator+=(rand/offset);
+                    rays[j] = i;
+                }
+                color.push_back(renderRays(state, rays)); // add the new colors to a array
+            }
+
+            auto L = avg(color); // avg that array
+            screen.setPixel(x, y, L);
+        }
+    }
 }
 
 // TODO; Extra feature
@@ -42,19 +91,114 @@ void renderImageWithMotionBlur(const Scene& scene, const BVHInterface& bvh, cons
 
 }
 
-// TODO; Extra feature
-// Given a rendered image, compute and apply a bloom post-processing effect to increase bright areas.
-// This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
-// not go on a hunting expedition for your implementation, so please keep it here!
+//a simple factorial function
+int fac(int n)
+{
+    if (n == 1 || n == 0) {
+        return 1;
+    }
+    return n * fac(n - 1);
+}
+
 void postprocessImageWithBloom(const Scene& scene, const Features& features, const Trackball& camera, Screen& image)
 {
     if (!features.extra.enableBloomEffect) {
         return;
     }
 
-    // ...
-}
+    Screen bloomy(image.resolution(), true);
 
+    //iterate over pixels o image and check if RGB has a value greater than or equal to 0.8.
+    //If that is the case, bloomy is set to the same color. 
+    //This part is to select the "bright" parts.
+    for (int a = 0; a < bloomy.resolution().x; a++) {
+        for (int b = 0; b < bloomy.resolution().y; b++) {
+            glm::vec3 pix = image.pixels()[image.indexAt(a, b)];
+            if (pix.r >= 0.8f || pix.g >= 0.8f || pix.b >= 0.8f) {
+                bloomy.setPixel(a, b, pix);
+            }
+        }
+    }
+
+    // calculate the "checks" for a Gaussian blur filter for blurring the bright areas.
+    int limit = 10;
+    std::vector<float> checks;
+    for (int x = 0; x < limit; x++) {
+        float combination = (float)fac(limit - 1) / ((float)fac(limit - x - 1) * (float)fac(x));
+        checks.push_back(combination);
+    }
+
+    //a quick normalization
+    float add = 0.0f;
+    for (const auto& x : checks) {
+        add += x;
+    }
+    for (auto& x : checks) {
+        x /= add;
+    }
+    
+    //horizontal blurring
+    Screen newPhoto(bloomy.resolution(), true);
+
+    for (int m = 0; m < bloomy.resolution().y; m++) {
+        for (int n = 0; n < bloomy.resolution().x; n++) {
+            float r = 0.0f, g = 0.0f, b = 0.0f;
+
+            //to apply a weighted average
+            for (int w = 0; w < limit; w++) {
+                //calculating the index
+                int q = m - (limit - 1) / 2 + w;
+                // to ensure it is not out of bounds
+                if (q < bloomy.resolution().x && q >= 0) {
+                    // updating the RGB values from our calculations and the bloomy
+                    glm::vec3 pixi = bloomy.pixels()[bloomy.indexAt(q, n)];
+                    r = r + pixi.r * checks[w];
+                    g = g + pixi.g * checks[w];
+                    b = b + pixi.b * checks[w];
+                }
+            }
+            newPhoto.setPixel(m, n, glm::vec3(r, g, b));
+        }
+    }
+
+    Screen blurry(bloomy.resolution(), true);
+
+    //vertical blurring 
+    for (int m = 0; m < bloomy.resolution().y; m++) {
+        for (int n = 0; n < bloomy.resolution().x; n++) {
+            float r = 0.0f, g = 0.0f, b = 0.0f;
+
+            //to apply a weighted average
+            for (int w = 0; w < limit; w++) {
+                // calculating the index
+                int q = n - (limit - 1) / 2 + w;
+                //to ensure it is not out of bounds
+                if (q >= 0 && q < bloomy.resolution().y) {
+                    //updating the RGB values from our calculations and the newPhoto
+                    glm::vec3 pixi = newPhoto.pixels()[newPhoto.indexAt(m, q)];
+                    r = r + pixi.r * checks[w];
+                    g = g + pixi.g * checks[w];
+                    b = b + pixi.b * checks[w];
+                }
+            }
+            blurry.setPixel(m, n, glm::vec3(r, g, b));
+        }
+    }
+
+    //mix the original with the final result in order to obtain the bloom effect
+    for (int a = 0; a < image.resolution().y; a++) {
+        for (int b = 0; b < image.resolution().x; b++) {
+            glm::vec3 pixi = blurry.pixels()[blurry.indexAt(a, b)] + image.pixels()[image.indexAt(a, b)];
+            //ensure no RBG values over 1
+            for (int m = 0; m < 3; m++) {
+                if (pixi[m] > 1) {
+                    pixi[m] = 1;
+                }
+            }
+            image.setPixel(a, b, pixi);
+        }
+    }
+}
 
 // TODO; Extra feature
 // Given a camera ray (or reflected camera ray) and an intersection, evaluates the contribution of a set of
@@ -104,6 +248,14 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
     }
 }
 
+int sign(float v) {
+    if (v < 0)
+        return -1;
+    if (v == 0)
+        return 0;
+    return 1;
+}
+
 // TODO; Extra feature
 // Given a camera ray (or reflected camera ray) that does not intersect the scene, evaluates the contribution
 // along the ray, originating from an environment map. You will have to add support for environment textures
@@ -112,23 +264,72 @@ void renderRayGlossyComponent(RenderState& state, Ray ray, const HitInfo& hitInf
 // - ray;   ray object
 // This method is not unit-tested, but we do expect to find it **exactly here**, and we'd rather
 // not go on a hunting expedition for your implementation, so please keep it here!
-glm::vec3 sampleEnvironmentMap(RenderState& state, Ray ray)
+glm::vec3 sampleEnvironmentMap(RenderState& state, const Ray ray)
 {
     if (state.features.extra.enableEnvironmentMap) {
         // Part of your implementation should go here
-        Image map = state.scene.envMap;
-        
-        glm::vec3 dir = glm::normalize(ray.direction);
-        glm::vec2 coords { std::fmod(1.0f, dir [0]), std::fmod(1.0f, dir[1]) };
+        float x = ray.direction.x;
+        float y = ray.direction.y;
+        float z = ray.direction.z;
+        float absX = glm::abs(x);
+        float absY = glm::abs(y);
+        float absZ = glm::abs(z);
 
-        return sampleTextureNearest(map, coords);
+        glm::vec2 coords;
 
-        return glm::vec3 { 0, 1, 0 };
+        int i = 0;
+        if (absX >= glm::max(absY, absZ)) {
+            coords = glm::vec2 { -sign(x) * z, -y } / absX;
+            if (x < 0)
+                i = 0;
+            else
+                i = 3;
+        }
+        if (absY >= glm::max(absX, absZ)) {
+            coords = glm::vec2 { x, sign(y) * z } / absY;
+            if (y < 0)
+                i = 1;
+            else
+                i = 4;
+        }
+        if (absZ >= glm::max(absX, absY)) {
+            coords = glm::vec2 { sign(z) * x, -y } / absZ;
+            if (z < 0)
+                i = 2;
+            else
+                i = 5;
+        }
+
+        //try {
+        const std::vector<Image>& sides = state.scene.envMap;
+        coords = (1.0f + coords) / 2.0f;
+        coords[1] = 1 - coords[1];
+        if (coords.x > 0 && coords.y > 0 && coords.x < 1 && coords.y < 1)
+            return sampleTextureNearest(sides[i], coords);
+        //} catch (...) {
+        //    std::cout << coords[0] << ", " << coords[1] << '\n';
+        //}
+        return { 0, 0, 0 };
     } else {
         return glm::vec3(0.f);
     }
 }
 
+float areaAabb(const AxisAlignedBox aabb) {
+    float x = aabb.upper.x - aabb.lower.x;
+    float y = aabb.upper.y - aabb.lower.y;
+    float z = aabb.upper.z - aabb.lower.z;
+    return x * y * z;
+}
+
+struct Sorter {
+    Sorter(int axis) { this->axis = axis; }
+    bool operator() (BVH::Primitive a, BVH::Primitive b) {
+        return computePrimitiveCentroid(a)[axis] < computePrimitiveCentroid(b)[axis];
+    }
+
+    int axis;
+};
 
 // TODO: Extra feature
 // As an alternative to `splitPrimitivesByMedian`, use a SAH+binning splitting criterion. Refer to
@@ -142,5 +343,54 @@ size_t splitPrimitivesBySAHBin(const AxisAlignedBox& aabb, uint32_t axis, std::s
 {
     using Primitive = BVH::Primitive;
 
-    return 0; // This is clearly not the solution
+    // sort the primitives on basis of the right axis, low to high, internal sort, like you have to sort the array 
+
+    // initiate variables
+    int amountPrim = primitives.size();
+    int amountSplits = 9; // amountPrim / 4; // #bins = 1/4 of #primitives
+    float sizePerBin = (aabb.upper[axis] - aabb.lower[axis]) / (amountSplits + 1);
+    float minArea = std::numeric_limits<float>::max(); // a variable to check which area is the best
+    float newArea;
+    int MinIndex = amountPrim/2; // the index of the divide with the lowers area
+    float distOnLine; // the actual dist of the bin divider
+    int lastJ = 0; // variable to make shifting through the array easier and faster
+    Primitive prim;
+    AxisAlignedBox aabbLower;
+    AxisAlignedBox aabbUpper;
+
+    std::sort(primitives.begin(), primitives.end(), Sorter(axis));
+    //std::binary(primitives.begin(), primitives.end(), Sorter(axis));
+
+    // loop through all bins
+    for (int i = 0; i < amountSplits; i++) {
+        distOnLine = aabb.lower[axis] + (i + 1) * sizePerBin;
+        
+        // search for the end of the bin
+        for (int j = lastJ; j < amountPrim; j++) {
+            prim = primitives[j];
+            // if the centroid is over the border, save the last primitive that was not over the border
+            if (computePrimitiveCentroid(prim)[axis] > distOnLine) {
+                // save the index of the next primitive to test
+                lastJ = j-1;
+                if (lastJ == -1) {
+                    lastJ = 0;
+                    break;
+                }
+                
+                // get the areas of the two bins that you made
+                aabbLower = computeSpanAABB(primitives.subspan(0, j));
+                aabbUpper = computeSpanAABB(primitives.subspan(j, amountPrim - j));
+                newArea = areaAabb(aabbLower) + areaAabb(aabbUpper);
+
+                // see if it is better than the last bins
+                if (newArea < minArea) {
+                    minArea = newArea;
+                    MinIndex = lastJ+1;
+                }
+                break;
+            }
+        }
+    }
+    //std::cout << MinIndex << "\n";
+    return MinIndex;
 }
